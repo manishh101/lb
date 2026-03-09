@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Load Balancer — Dashboard</title>
+    <title>Intelligent Load Balancer — Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
@@ -20,28 +20,31 @@
         }
 
         :root {
-            --bg: #f8f9fb;
-            --white: #ffffff;
-            --border: #e5e7eb;
-            --border-light: #f0f1f3;
-            --text: #111827;
-            --text-secondary: #6b7280;
-            --text-tertiary: #9ca3af;
+            --bg: #f4f6f9;
+            --bg-card: #ffffff;
+            --bg-card-hover: #f8fafc;
+            --border: #e2e8f0;
+            --border-light: #f1f5f9;
+            --text: #1e293b;
+            --text-secondary: #475569;
+            --text-tertiary: #94a3b8;
             --accent: #4f46e5;
             --accent-light: #eef2ff;
-            --green: #059669;
-            --green-bg: #ecfdf5;
-            --green-border: #a7f3d0;
+            --green: #16a34a;
+            --green-bg: #f0fdf4;
+            --green-border: #bbf7d0;
             --red: #dc2626;
             --red-bg: #fef2f2;
             --red-border: #fecaca;
             --amber: #d97706;
             --amber-bg: #fffbeb;
             --amber-border: #fde68a;
+            --blue: #2563eb;
+            --blue-light: #dbeafe;
             --radius: 12px;
             --radius-sm: 6px;
-            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-            --shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
         }
 
         body {
@@ -50,6 +53,7 @@
             color: var(--text);
             -webkit-font-smoothing: antialiased;
             line-height: 1.5;
+            min-height: 100vh;
         }
 
         .mono {
@@ -58,45 +62,36 @@
 
         /* Shell */
         .shell {
-            max-width: 1160px;
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 32px 24px 48px;
+            padding: 28px 24px 48px;
         }
 
         /* Header */
         .header {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: space-between;
-            margin-bottom: 32px;
+            margin-bottom: 28px;
         }
 
         .header-left {
             display: flex;
-            align-items: center;
-            gap: 14px;
-        }
-
-        .logo {
-            width: 36px;
-            height: 36px;
-            background: var(--accent);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .logo svg {
-            width: 18px;
-            height: 18px;
+            flex-direction: column;
+            gap: 4px;
         }
 
         .header h1 {
-            font-size: 18px;
-            font-weight: 600;
+            font-size: 22px;
+            font-weight: 700;
             color: var(--text);
-            letter-spacing: -0.3px;
+            letter-spacing: -0.4px;
+        }
+
+        .header-subtitle {
+            font-size: 13px;
+            color: var(--text-tertiary);
+            font-weight: 400;
         }
 
         .header-meta {
@@ -109,7 +104,7 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            padding: 4px 12px;
+            padding: 5px 14px;
             border-radius: 20px;
             font-size: 12px;
             font-weight: 500;
@@ -138,35 +133,35 @@
             font-variant-numeric: tabular-nums;
         }
 
-        /* Metric cards */
+        /* KPI cards */
         .kpi-row {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 12px;
-            margin-bottom: 28px;
+            margin-bottom: 24px;
         }
 
         .kpi {
-            background: var(--white);
+            background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            padding: 20px;
+            padding: 18px 20px;
             box-shadow: var(--shadow-sm);
         }
 
         .kpi-label {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 500;
             color: var(--text-tertiary);
             text-transform: uppercase;
-            letter-spacing: 0.4px;
+            letter-spacing: 0.5px;
             margin-bottom: 8px;
         }
 
         .kpi-value {
-            font-size: 30px;
+            font-size: 28px;
             font-weight: 700;
-            letter-spacing: -1.2px;
+            letter-spacing: -1px;
             color: var(--text);
         }
 
@@ -178,115 +173,120 @@
             color: var(--accent);
         }
 
-        /* Section label */
-        .section-label {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text);
-            margin-bottom: 12px;
+        .kpi-value.red {
+            color: var(--red);
         }
 
-        /* Server table */
-        .table-wrap {
-            background: var(--white);
+        /* Server cards grid */
+        .server-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .server-card {
+            background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            overflow: hidden;
+            padding: 18px 20px;
             box-shadow: var(--shadow-sm);
-            margin-bottom: 28px;
+            transition: box-shadow 0.2s, border-color 0.2s;
         }
 
-        .server-table {
-            width: 100%;
-            border-collapse: collapse;
+        .server-card:hover {
+            box-shadow: var(--shadow);
+            border-color: #cbd5e1;
         }
 
-        .server-table th {
-            text-align: left;
-            padding: 10px 18px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-tertiary);
-            background: var(--bg);
-            border-bottom: 1px solid var(--border);
+        .server-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
         }
 
-        .server-table td {
-            padding: 14px 18px;
-            font-size: 13px;
-            color: var(--text);
-            border-bottom: 1px solid var(--border-light);
-            vertical-align: middle;
+        .server-name {
+            font-size: 16px;
+            font-weight: 700;
         }
 
-        .server-table tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        .server-table tbody tr:hover td {
-            background: #fafbfc;
-        }
-
-        .srv-name {
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        .srv-url {
-            font-size: 11px;
-            color: var(--text-tertiary);
-            margin-top: 1px;
-        }
-
-        /* Badges */
-        .badge {
+        .status-badge {
             display: inline-flex;
             align-items: center;
             gap: 5px;
-            font-size: 12px;
-            font-weight: 500;
+            font-size: 11px;
+            font-weight: 600;
             padding: 3px 10px;
             border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
 
-        .badge-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: currentColor;
-        }
-
-        .badge.healthy {
+        .status-badge.up {
             background: var(--green-bg);
             color: var(--green);
         }
 
-        .badge.down {
+        .status-badge.down {
             background: var(--red-bg);
             color: var(--red);
             animation: pulse 1.5s ease-in-out infinite;
         }
 
+        .status-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
         @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
 
-            0%,
-            100% {
-                opacity: 1;
-            }
+        .server-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
 
-            50% {
-                opacity: 0.5;
-            }
+        .stat-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            font-weight: 400;
+        }
+
+        .stat-value {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .stat-value.fail {
+            color: var(--red);
+        }
+
+        .stat-value.muted {
+            color: var(--text-tertiary);
+            font-size: 11px;
+            font-weight: 500;
         }
 
         .circuit-tag {
-            font-size: 11px;
-            font-weight: 600;
-            padding: 2px 8px;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 10px;
             border-radius: var(--radius-sm);
-            letter-spacing: 0.3px;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
         }
 
         .circuit-tag.closed {
@@ -304,51 +304,38 @@
             color: var(--amber);
         }
 
-        /* Latency bar */
-        .lat-group {
+        .stat-row .priority-group {
             display: flex;
             align-items: center;
-            gap: 8px;
-        }
-
-        .lat-bar {
-            width: 64px;
-            height: 5px;
-            background: var(--border-light);
-            border-radius: 3px;
-            overflow: hidden;
-        }
-
-        .lat-fill {
-            height: 100%;
-            border-radius: 3px;
-            transition: width 0.4s ease;
-        }
-
-        /* Priority */
-        .pri-cell {
-            font-size: 12px;
+            gap: 4px;
         }
 
         .pri-h {
             color: var(--amber);
-            font-weight: 600;
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .pri-sep {
+            color: var(--text-tertiary);
+            font-size: 12px;
         }
 
         .pri-l {
             color: var(--text-tertiary);
+            font-size: 13px;
         }
 
         /* Charts */
         .charts-row {
             display: grid;
-            grid-template-columns: 300px 1fr;
-            gap: 12px;
-            margin-bottom: 28px;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
         }
 
         .chart-card {
-            background: var(--white);
+            background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: var(--radius);
             padding: 20px 24px;
@@ -356,10 +343,55 @@
         }
 
         .chart-title {
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 600;
             color: var(--text);
             margin-bottom: 16px;
+        }
+
+        /* Priority section */
+        .priority-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            margin-bottom: 28px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .priority-section .chart-title {
+            margin-bottom: 16px;
+        }
+
+        .priority-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+
+        .priority-item {
+            text-align: center;
+        }
+
+        .priority-item .pri-name {
+            font-size: 13px;
+            color: var(--text-tertiary);
+            margin-bottom: 6px;
+        }
+
+        .priority-item .pri-values {
+            font-size: 14px;
+            color: var(--text);
+        }
+
+        .priority-item .pri-high {
+            color: var(--amber);
+            font-weight: 600;
+        }
+
+        .priority-item .pri-low {
+            color: var(--blue);
+            font-weight: 600;
         }
 
         /* Footer */
@@ -371,6 +403,12 @@
         }
 
         /* Responsive */
+        @media (max-width: 1024px) {
+            .server-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
         @media (max-width: 960px) {
             .kpi-row {
                 grid-template-columns: repeat(2, 1fr);
@@ -378,6 +416,10 @@
 
             .charts-row {
                 grid-template-columns: 1fr;
+            }
+
+            .priority-grid {
+                grid-template-columns: repeat(2, 1fr);
             }
         }
 
@@ -388,7 +430,6 @@
 
             .header {
                 flex-direction: column;
-                align-items: flex-start;
                 gap: 12px;
             }
 
@@ -396,12 +437,8 @@
                 grid-template-columns: 1fr 1fr;
             }
 
-            .table-wrap {
-                overflow-x: auto;
-            }
-
-            .server-table {
-                min-width: 700px;
+            .server-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -412,12 +449,8 @@
         <!-- Header -->
         <header class="header">
             <div class="header-left">
-                <div class="logo">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round">
-                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                    </svg>
-                </div>
-                <h1>Load Balancer</h1>
+                <h1>Intelligent Load Balancer</h1>
+                <span class="header-subtitle">Real-time Server Monitoring Dashboard</span>
             </div>
             <div class="header-meta">
                 <span id="ws-badge" class="ws-badge">
@@ -439,7 +472,7 @@
                 <div id="success-rate" class="kpi-value green mono">—</div>
             </div>
             <div class="kpi">
-                <div class="kpi-label">Healthy Nodes</div>
+                <div class="kpi-label">Healthy Servers</div>
                 <div id="healthy-count" class="kpi-value mono">0 / 0</div>
             </div>
             <div class="kpi">
@@ -448,36 +481,25 @@
             </div>
         </div>
 
-        <!-- Server Table -->
-        <div class="section-label">Backend Servers</div>
-        <div class="table-wrap">
-            <table class="server-table">
-                <thead>
-                    <tr>
-                        <th>Server</th>
-                        <th>Status</th>
-                        <th>Requests</th>
-                        <th>Latency</th>
-                        <th>Active</th>
-                        <th>Success</th>
-                        <th>Circuit</th>
-                        <th>Priority</th>
-                    </tr>
-                </thead>
-                <tbody id="server-tbody"></tbody>
-            </table>
-        </div>
+        <!-- Server Cards -->
+        <div id="server-grid" class="server-grid"></div>
 
         <!-- Charts -->
         <div class="charts-row">
             <div class="chart-card">
-                <div class="chart-title">Traffic Share</div>
-                <canvas id="distChart"></canvas>
+                <div class="chart-title">Request Distribution</div>
+                <canvas id="distChart" height="200"></canvas>
             </div>
             <div class="chart-card">
-                <div class="chart-title">Latency Over Time</div>
-                <canvas id="latencyChart" height="100"></canvas>
+                <div class="chart-title">Latency (ms)</div>
+                <canvas id="latencyChart" height="200"></canvas>
             </div>
+        </div>
+
+        <!-- Priority Distribution -->
+        <div class="priority-section">
+            <div class="chart-title">Priority Distribution</div>
+            <div id="priority-grid" class="priority-grid"></div>
         </div>
 
         <div class="footer">Adaptive Routing · Fault Tolerance · Circuit Breaker</div>
@@ -485,24 +507,22 @@
 
     <script>
         // Palette
-        const COLORS = ['#4f46e5', '#059669', '#d97706', '#dc2626', '#0284c7', '#7c3aed'];
+        const COLORS = ['#4f46e5', '#16a34a', '#d97706', '#dc2626', '#2563eb', '#9333ea'];
 
-        // Chart defaults
+        // Chart defaults for light theme
         Chart.defaults.font.family = "'Inter', sans-serif";
         Chart.defaults.font.size = 11;
-        Chart.defaults.color = '#9ca3af';
-        Chart.defaults.borderColor = '#f0f1f3';
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.borderColor = '#f1f5f9';
 
         const distChart = new Chart(document.getElementById('distChart'), {
             type: 'doughnut',
             data: { labels: [], datasets: [{ data: [], backgroundColor: COLORS, borderWidth: 0 }] },
             options: {
-                cutout: '68%',
                 responsive: true,
                 plugins: {
                     legend: {
-                        position: 'bottom',
-                        labels: { padding: 14, usePointStyle: true, pointStyleWidth: 8, font: { size: 12 } }
+                        labels: { color: '#475569' }
                     }
                 }
             }
@@ -510,30 +530,33 @@
 
         const latHistory = {};
         const timeLabels = [];
-        const MAX_PTS = 40;
+        const MAX_PTS = 30;
 
         const latChart = new Chart(document.getElementById('latencyChart'), {
             type: 'line',
             data: { labels: timeLabels, datasets: [] },
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false },
                 scales: {
-                    x: { ticks: { maxTicksLimit: 6, font: { size: 10 } }, grid: { display: false } },
+                    x: {
+                        ticks: { color: '#94a3b8' },
+                        grid: { color: '#f1f5f9' }
+                    },
                     y: {
-                        beginAtZero: true,
-                        ticks: { font: { size: 10 }, callback: v => v + 'ms' },
-                        grid: { color: '#f3f4f6' }
+                        ticks: { color: '#94a3b8' },
+                        grid: { color: '#f1f5f9' },
+                        title: { display: true, text: 'ms', color: '#475569' }
                     }
                 },
                 plugins: {
-                    legend: { labels: { usePointStyle: true, pointStyleWidth: 8, padding: 12, font: { size: 11 } } },
+                    legend: {
+                        labels: { color: '#475569' }
+                    },
                     tooltip: {
-                        backgroundColor: '#fff',
-                        titleColor: '#111827',
-                        bodyColor: '#6b7280',
-                        borderColor: '#e5e7eb',
+                        backgroundColor: '#ffffff',
+                        titleColor: '#1e293b',
+                        bodyColor: '#475569',
+                        borderColor: '#e2e8f0',
                         borderWidth: 1,
                         padding: 10,
                         cornerRadius: 8,
@@ -541,11 +564,7 @@
                         callbacks: { label: ctx => ` ${ctx.dataset.label}  ${ctx.parsed.y.toFixed(1)}ms` }
                     }
                 },
-                elements: {
-                    line: { tension: 0.35, borderWidth: 2 },
-                    point: { radius: 0, hoverRadius: 4 }
-                },
-                animation: { duration: 250 }
+                animation: { duration: 300 }
             }
         });
 
@@ -556,7 +575,7 @@
             ws = new WebSocket(`${proto}//${location.host}/ws`);
             ws.onopen = () => {
                 document.getElementById('ws-badge').classList.add('live');
-                document.getElementById('ws-text').textContent = 'Live';
+                document.getElementById('ws-text').textContent = 'Connected';
             };
             ws.onclose = () => {
                 document.getElementById('ws-badge').classList.remove('live');
@@ -585,36 +604,58 @@
             document.getElementById('healthy-count').textContent = `${healthy} / ${entries.length}`;
             document.getElementById('active-conn').textContent = active;
 
-            // Table
-            const maxLat = Math.max(...entries.map(([, s]) => s.avg_latency_ms), 1);
-            document.getElementById('server-tbody').innerHTML = entries.map(([url, s], i) => {
-                const pct = totalReq > 0 ? (s.total_requests / totalReq * 100).toFixed(1) : '0.0';
+            // Server cards
+            document.getElementById('server-grid').innerHTML = entries.map(([url, s], i) => {
                 const sr = s.total_requests > 0 ? (s.success_count / s.total_requests * 100).toFixed(1) : '—';
-                const latPct = Math.min(s.avg_latency_ms / maxLat * 100, 100);
                 const cc = s.circuit_state === 'CLOSED' ? 'closed' : s.circuit_state === 'OPEN' ? 'open' : 'half';
                 const color = COLORS[i % COLORS.length];
-                return `<tr>
-                    <td>
-                        <div class="srv-name" style="color:${color}">${s.name}</div>
-                        <div class="srv-url mono">${url.replace('http://', '')}</div>
-                    </td>
-                    <td><span class="badge ${s.is_healthy ? 'healthy' : 'down'}"><span class="badge-dot"></span>${s.is_healthy ? 'Healthy' : 'Down'}</span></td>
-                    <td class="mono">${s.total_requests.toLocaleString()} <span style="color:var(--text-tertiary);font-size:11px">(${pct}%)</span></td>
-                    <td>
-                        <div class="lat-group">
-                            <span class="mono">${s.avg_latency_ms.toFixed(1)}<span style="color:var(--text-tertiary)">ms</span></span>
-                            <div class="lat-bar"><div class="lat-fill" style="width:${latPct}%;background:${color}"></div></div>
+                return `<div class="server-card">
+                    <div class="server-card-header">
+                        <span class="server-name" style="color:${color}">${s.name}</span>
+                        <span class="status-badge ${s.is_healthy ? 'up' : 'down'}">
+                            <span class="status-dot"></span>
+                            ${s.is_healthy ? 'UP' : 'DOWN'}
+                        </span>
+                    </div>
+                    <div class="server-stats">
+                        <div class="stat-row">
+                            <span class="stat-label">Requests</span>
+                            <span class="stat-value mono">${s.total_requests.toLocaleString()}</span>
                         </div>
-                    </td>
-                    <td class="mono">${s.active_connections}</td>
-                    <td class="mono">${sr}%</td>
-                    <td><span class="circuit-tag ${cc}">${s.circuit_state}</span></td>
-                    <td class="pri-cell">
-                        <span class="pri-h mono">${s.high_priority_count}</span>
-                        <span style="color:var(--text-tertiary);margin:0 2px">/</span>
-                        <span class="pri-l mono">${s.low_priority_count}</span>
-                    </td>
-                </tr>`;
+                        <div class="stat-row">
+                            <span class="stat-label">Latency</span>
+                            <span class="stat-value mono">${s.avg_latency_ms.toFixed(1)}ms</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Active</span>
+                            <span class="stat-value mono">${s.active_connections}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Success</span>
+                            <span class="stat-value mono">${sr}%</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Failures</span>
+                            <span class="stat-value mono ${s.failure_count > 0 ? 'fail' : ''}">${s.failure_count}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Circuit</span>
+                            <span class="circuit-tag ${cc}">${s.circuit_state}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">HIGH / LOW</span>
+                            <div class="priority-group">
+                                <span class="pri-h mono">${s.high_priority_count}</span>
+                                <span class="pri-sep">/</span>
+                                <span class="pri-l mono">${s.low_priority_count}</span>
+                            </div>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Last Checked</span>
+                            <span class="stat-value muted mono">${s.last_checked || '—'}</span>
+                        </div>
+                    </div>
+                </div>`;
             }).join('');
 
             // Dist chart
@@ -623,8 +664,8 @@
             distChart.update();
 
             // Latency chart
-            const now = new Date();
-            timeLabels.push(now.getMinutes().toString().padStart(2, '0') + ':' + now.getSeconds().toString().padStart(2, '0'));
+            const timeLabel = new Date().toLocaleTimeString();
+            timeLabels.push(timeLabel);
             if (timeLabels.length > MAX_PTS) timeLabels.shift();
 
             entries.forEach(([, s]) => {
@@ -637,10 +678,22 @@
                 label: s.name,
                 data: latHistory[s.name] || [],
                 borderColor: COLORS[i % COLORS.length],
-                backgroundColor: COLORS[i % COLORS.length] + '10',
-                fill: true,
+                backgroundColor: 'transparent',
+                tension: 0.3,
+                pointRadius: 0,
             }));
             latChart.update();
+
+            // Priority grid
+            document.getElementById('priority-grid').innerHTML = entries.map(([, s]) => `
+                <div class="priority-item">
+                    <div class="pri-name">${s.name}</div>
+                    <div class="pri-values">
+                        <span class="pri-high">${s.high_priority_count}</span> HIGH /
+                        <span class="pri-low">${s.low_priority_count}</span> LOW
+                    </div>
+                </div>
+            `).join('');
         }
 
         // Clock
