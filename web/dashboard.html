@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intelligent Load Balancer — Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background: #0f172a; font-family: 'Inter', sans-serif; }
+        .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; }
+        .status-up { color: #22c55e; }
+        .status-down { color: #ef4444; }
+        .badge-up { background: #166534; color: #22c55e; }
+        .badge-down { background: #7f1d1d; color: #ef4444; }
+        .badge-half { background: #713f12; color: #eab308; }
+        .pulse { animation: pulse 2s infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="text-gray-200 min-h-screen p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-white">⚡ Intelligent Load Balancer</h1>
+                <p class="text-gray-400 mt-1">Real-time Server Monitoring Dashboard</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <span id="ws-status" class="px-3 py-1 rounded-full text-sm badge-down">● Disconnected</span>
+                <span id="clock" class="text-gray-400 text-sm"></span>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-4 gap-4 mb-8">
+            <div class="card p-4">
+                <p class="text-gray-400 text-sm">Total Requests</p>
+                <p id="total-req" class="text-2xl font-bold text-white mt-1">0</p>
+            </div>
+            <div class="card p-4">
+                <p class="text-gray-400 text-sm">Success Rate</p>
+                <p id="success-rate" class="text-2xl font-bold text-green-400 mt-1">0%</p>
+            </div>
+            <div class="card p-4">
+                <p class="text-gray-400 text-sm">Healthy Servers</p>
+                <p id="healthy-count" class="text-2xl font-bold text-white mt-1">0/0</p>
+            </div>
+            <div class="card p-4">
+                <p class="text-gray-400 text-sm">Active Connections</p>
+                <p id="active-conn" class="text-2xl font-bold text-blue-400 mt-1">0</p>
+            </div>
+        </div>
+
+        <!-- Server Cards Grid -->
+        <div id="server-grid" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <!-- Dynamically populated -->
+        </div>
+
+        <!-- Charts Row -->
+        <div class="grid grid-cols-2 gap-4">
+            <div class="card p-4">
+                <h3 class="text-white font-semibold mb-3">Request Distribution</h3>
+                <canvas id="distChart" height="200"></canvas>
+            </div>
+            <div class="card p-4">
+                <h3 class="text-white font-semibold mb-3">Latency (ms)</h3>
+                <canvas id="latencyChart" height="200"></canvas>
+            </div>
+        </div>
+
+        <!-- Priority Stats -->
+        <div class="card p-4 mt-4">
+            <h3 class="text-white font-semibold mb-3">Priority Distribution</h3>
+            <div id="priority-grid" class="grid grid-cols-4 gap-4">
+                <!-- Dynamically populated -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ─── Chart Setup ──────────────────────────────────
+        const distCtx = document.getElementById('distChart').getContext('2d');
+        const latCtx = document.getElementById('latencyChart').getContext('2d');
+
+        const COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
+        const distChart = new Chart(distCtx, {
+            type: 'doughnut',
+            data: { labels: [], datasets: [{ data: [], backgroundColor: COLORS }] },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { labels: { color: '#94a3b8' } }
+                }
+            }
+        });
+
+        const latencyHistory = {};
+        const MAX_HISTORY = 30;
+
+        const latencyChart = new Chart(latCtx, {
+            type: 'line',
+            data: { labels: [], datasets: [] },
+            options: {
+                responsive: true,
+                scales: {
+                    x: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+                    y: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' },
+                         title: { display: true, text: 'ms', color: '#94a3b8' } }
+                },
+                plugins: {
+                    legend: { labels: { color: '#94a3b8' } }
+                },
+                animation: { duration: 300 }
+            }
+        });
+
+        // ─── WebSocket Connection ─────────────────────────
+        let ws;
+        let tickCount = 0;
+
+        function connect() {
+            const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${proto}//${location.host}/ws`);
+
+            ws.onopen = () => {
+                document.getElementById('ws-status').className = 'px-3 py-1 rounded-full text-sm badge-up';
+                document.getElementById('ws-status').textContent = '● Connected';
+            };
+
+            ws.onclose = () => {
+                document.getElementById('ws-status').className = 'px-3 py-1 rounded-full text-sm badge-down';
+                document.getElementById('ws-status').textContent = '● Disconnected';
+                setTimeout(connect, 2000);
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                updateDashboard(data);
+            };
+        }
+
+        // ─── Dashboard Update ─────────────────────────────
+        function updateDashboard(servers) {
+            const entries = Object.entries(servers);
+            let totalReq = 0, totalOK = 0, healthyCount = 0, totalActive = 0;
+            const names = [], reqs = [], latencies = [];
+
+            // Process stats
+            entries.forEach(([url, s]) => {
+                totalReq += s.total_requests;
+                totalOK += s.success_count;
+                totalActive += s.active_connections;
+                if (s.is_healthy) healthyCount++;
+                names.push(s.name);
+                reqs.push(s.total_requests);
+                latencies.push(s.avg_latency_ms);
+            });
+
+            // Summary cards
+            document.getElementById('total-req').textContent = totalReq.toLocaleString();
+            const rate = totalReq > 0 ? (totalOK / totalReq * 100).toFixed(1) : '0.0';
+            document.getElementById('success-rate').textContent = rate + '%';
+            document.getElementById('healthy-count').textContent = `${healthyCount}/${entries.length}`;
+            document.getElementById('active-conn').textContent = totalActive;
+
+            // Server cards
+            const grid = document.getElementById('server-grid');
+            grid.innerHTML = entries.map(([url, s], i) => {
+                const healthClass = s.is_healthy ? 'status-up' : 'status-down';
+                const healthText = s.is_healthy ? '● UP' : '● DOWN';
+                const healthBadge = s.is_healthy ? 'badge-up' : 'badge-down';
+                const circuitBadge = s.circuit_state === 'CLOSED' ? 'badge-up' :
+                                     s.circuit_state === 'OPEN' ? 'badge-down' : 'badge-half';
+                const successRate = s.total_requests > 0 ?
+                    (s.success_count / s.total_requests * 100).toFixed(1) : '0.0';
+                return `
+                    <div class="card p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-white font-semibold">${s.name}</h3>
+                            <span class="${healthClass} text-sm font-medium ${s.is_healthy ? '' : 'pulse'}">${healthText}</span>
+                        </div>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Requests</span>
+                                <span class="text-white">${s.total_requests.toLocaleString()}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Latency</span>
+                                <span class="text-white">${s.avg_latency_ms.toFixed(1)}ms</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Active</span>
+                                <span class="text-white">${s.active_connections}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Success</span>
+                                <span class="text-white">${successRate}%</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-400">Circuit</span>
+                                <span class="px-2 py-0.5 rounded text-xs ${circuitBadge}">${s.circuit_state}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">HIGH/LOW</span>
+                                <span class="text-white">${s.high_priority_count}/${s.low_priority_count}</span>
+                            </div>
+                        </div>
+                    </div>`;
+            }).join('');
+
+            // Distribution chart
+            distChart.data.labels = names;
+            distChart.data.datasets[0].data = reqs;
+            distChart.update();
+
+            // Latency chart (time series)
+            tickCount++;
+            const timeLabel = new Date().toLocaleTimeString();
+
+            entries.forEach(([url, s], i) => {
+                if (!latencyHistory[s.name]) latencyHistory[s.name] = [];
+                latencyHistory[s.name].push(s.avg_latency_ms);
+                if (latencyHistory[s.name].length > MAX_HISTORY) {
+                    latencyHistory[s.name].shift();
+                }
+            });
+
+            if (!latencyChart.data.labels) latencyChart.data.labels = [];
+            latencyChart.data.labels.push(timeLabel);
+            if (latencyChart.data.labels.length > MAX_HISTORY) {
+                latencyChart.data.labels.shift();
+            }
+
+            latencyChart.data.datasets = entries.map(([url, s], i) => ({
+                label: s.name,
+                data: latencyHistory[s.name] || [],
+                borderColor: COLORS[i % COLORS.length],
+                backgroundColor: 'transparent',
+                tension: 0.3,
+                pointRadius: 0,
+            }));
+            latencyChart.update();
+
+            // Priority grid
+            const priGrid = document.getElementById('priority-grid');
+            priGrid.innerHTML = entries.map(([url, s]) => `
+                <div class="text-center">
+                    <p class="text-gray-400 text-sm">${s.name}</p>
+                    <p class="text-white">
+                        <span class="text-yellow-400">${s.high_priority_count}</span> HIGH /
+                        <span class="text-blue-400">${s.low_priority_count}</span> LOW
+                    </p>
+                </div>
+            `).join('');
+        }
+
+        // ─── Clock ────────────────────────────────────────
+        setInterval(() => {
+            document.getElementById('clock').textContent = new Date().toLocaleTimeString();
+        }, 1000);
+
+        // ─── Init ─────────────────────────────────────────
+        connect();
+    </script>
+</body>
+</html>

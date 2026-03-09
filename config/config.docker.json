@@ -1,0 +1,35 @@
+{
+  "listen_port": 8080,
+  "dashboard_port": 8081,
+  "algorithm": "weighted",
+  "health_interval_sec": 5,
+  "breaker_threshold": 3,
+  "breaker_timeout_sec": 15,
+  "metrics_interval_sec": 10,
+  "servers": [
+    {
+      "url": "http://alpha:8001",
+      "name": "Alpha",
+      "weight": 5,
+      "delay_ms": 15
+    },
+    {
+      "url": "http://beta:8002",
+      "name": "Beta",
+      "weight": 3,
+      "delay_ms": 50
+    },
+    {
+      "url": "http://gamma:8003",
+      "name": "Gamma",
+      "weight": 1,
+      "delay_ms": 100
+    },
+    {
+      "url": "http://delta:8004",
+      "name": "Delta",
+      "weight": 4,
+      "delay_ms": 20
+    }
+  ]
+}

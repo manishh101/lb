@@ -1,0 +1,103 @@
+version: "3.8"
+
+networks:
+  lb-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
+
+services:
+  alpha:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    command: ["8001", "15", "Alpha"]
+    container_name: alpha
+    hostname: alpha
+    networks:
+      lb-network:
+        ipv4_address: 172.20.0.11
+    ports:
+      - "8001:8001"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8001/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 3
+
+  beta:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    command: ["8002", "50", "Beta"]
+    container_name: beta
+    hostname: beta
+    networks:
+      lb-network:
+        ipv4_address: 172.20.0.12
+    ports:
+      - "8002:8002"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8002/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 3
+
+  gamma:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    command: ["8003", "100", "Gamma"]
+    container_name: gamma
+    hostname: gamma
+    networks:
+      lb-network:
+        ipv4_address: 172.20.0.13
+    ports:
+      - "8003:8003"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8003/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 3
+
+  delta:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    command: ["8004", "20", "Delta"]
+    container_name: delta
+    hostname: delta
+    networks:
+      lb-network:
+        ipv4_address: 172.20.0.14
+    ports:
+      - "8004:8004"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8004/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 3
+
+  loadbalancer:
+    build:
+      context: .
+      dockerfile: Dockerfile.lb
+    container_name: loadbalancer
+    hostname: loadbalancer
+    networks:
+      lb-network:
+        ipv4_address: 172.20.0.10
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    depends_on:
+      alpha:
+        condition: service_healthy
+      beta:
+        condition: service_healthy
+      gamma:
+        condition: service_healthy
+      delta:
+        condition: service_healthy
