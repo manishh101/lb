@@ -73,17 +73,24 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	h.metrics.RecordEnd(target, latencyMs, true)
-	h.breakers[target].RecordSuccess()
+	// Edge case: treat 5xx backend responses as failures
+	isSuccess := resp.StatusCode < 500
+	h.metrics.RecordEnd(target, latencyMs, isSuccess)
+	if isSuccess {
+		h.breakers[target].RecordSuccess()
+	} else {
+		h.breakers[target].RecordFailure()
+	}
 	h.metrics.SetCircuitState(target, h.breakers[target].State())
 	h.metrics.RecordPriority(target, pri)
 
-	// FIX B2: Set X-Handled-By so client can track server distribution
-	serverName := h.metrics.GetName(target)
-	w.Header().Set("X-Handled-By", serverName)
+	// Copy backend response headers first
 	for k, vals := range resp.Header {
 		w.Header()[k] = vals
 	}
+	// FIX B2: Set X-Handled-By AFTER copy so our header is not overwritten
+	serverName := h.metrics.GetName(target)
+	w.Header().Set("X-Handled-By", serverName)
 	w.WriteHeader(resp.StatusCode)
 	io.Copy(w, resp.Body)
 

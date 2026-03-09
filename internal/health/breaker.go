@@ -94,5 +94,7 @@ func (b *Breaker) RecordFailure() {
 
 // State returns the current circuit breaker state as a string.
 func (b *Breaker) State() string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	return b.state.String()
 }
