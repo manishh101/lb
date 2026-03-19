@@ -1,8 +1,15 @@
 package balancer
 
 import (
+	"math/rand"
+	"time"
+
 	"intelligent-lb/internal/metrics"
 )
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 // Algorithm defines the interface for all load balancing algorithms.
 // Each algorithm selects one server from the candidates based on stats and priority.
@@ -41,7 +48,19 @@ func (ws WeightedScore) Select(
 		if !ok {
 			continue
 		}
-		score := latencyWeight/(1.0+s.AvgLatencyMs) + loadWeight/(1.0+float64(s.ActiveConnections))
+		// Base statistical score (Latency & Load)
+		baseScore := latencyWeight/(1.0+s.AvgLatencyMs) + loadWeight/(1.0+float64(s.ActiveConnections))
+		
+		// Gap 4: Incorporate Configured Server Weight multiplier
+		weightMultiplier := float64(s.Weight)
+		if weightMultiplier <= 0 {
+			weightMultiplier = 1.0
+		}
+		
+		// Gap 5: Jitter (Tiny random float [0.0, 0.001)) to break 100% ties at startup
+		jitter := rand.Float64() * 0.001
+
+		score := (baseScore * weightMultiplier) + jitter
 		if score > bestScore {
 			bestScore = score
 			bestServer = url

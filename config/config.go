@@ -23,6 +23,11 @@ type Config struct {
 	BreakerThreshold   int            `json:"breaker_threshold"`
 	BreakerTimeoutSec  int            `json:"breaker_timeout_sec"`
 	MetricsIntervalSec int            `json:"metrics_interval_sec"`
+	MaxRetries           int            `json:"max_retries"`
+	ShutdownTimeoutSec   int            `json:"shutdown_timeout_sec"`
+	RateLimitRPS         float64        `json:"rate_limit_rps"`
+	RateLimitBurst       int            `json:"rate_limit_burst"`
+	PerAttemptTimeoutSec int            `json:"per_attempt_timeout_sec"`
 }
 
 // Load reads and parses a JSON configuration file.
@@ -56,6 +61,21 @@ func Load(path string) (*Config, error) {
 	}
 	if cfg.Algorithm == "" {
 		cfg.Algorithm = "weighted"
+	}
+	if cfg.MaxRetries == 0 {
+		cfg.MaxRetries = 3
+	}
+	if cfg.ShutdownTimeoutSec == 0 {
+		cfg.ShutdownTimeoutSec = 15
+	}
+	if cfg.RateLimitRPS == 0 {
+		cfg.RateLimitRPS = 1000 // default 1000 requests per second
+	}
+	if cfg.RateLimitBurst == 0 {
+		cfg.RateLimitBurst = 2000
+	}
+	if cfg.PerAttemptTimeoutSec == 0 {
+		cfg.PerAttemptTimeoutSec = 5 // 5 seconds per retry attempt
 	}
 	return &cfg, nil
 }

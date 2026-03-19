@@ -9,6 +9,7 @@ import (
 type ServerStats struct {
 	Name              string  `json:"name"`
 	URL               string  `json:"url"`
+	Weight            int     `json:"weight"`
 	IsHealthy         bool    `json:"is_healthy"`
 	AvgLatencyMs      float64 `json:"avg_latency_ms"`
 	ActiveConnections int64   `json:"active_connections"`
@@ -29,16 +30,21 @@ type Collector struct {
 }
 
 // New creates a Collector and initializes metrics for each server.
-func New(servers []string, names []string) *Collector {
+func New(servers []string, names []string, weights []int) *Collector {
 	c := &Collector{servers: make(map[string]*ServerStats)}
 	for i, url := range servers {
 		name := url
+		weight := 1
 		if i < len(names) {
 			name = names[i]
+		}
+		if i < len(weights) && weights[i] > 0 {
+			weight = weights[i]
 		}
 		c.servers[url] = &ServerStats{
 			Name:         name,
 			URL:          url,
+			Weight:       weight,
 			IsHealthy:    true,
 			CircuitState: "CLOSED",
 		}

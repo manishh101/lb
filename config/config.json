@@ -6,6 +6,8 @@
   "breaker_threshold": 3,
   "breaker_timeout_sec": 15,
   "metrics_interval_sec": 10,
+  "max_retries": 3,
+  "shutdown_timeout_sec": 15,
   "servers": [
     { "url": "http://localhost:8001", "name": "Alpha",  "weight": 5, "delay_ms": 15  },
     { "url": "http://localhost:8002", "name": "Beta",   "weight": 3, "delay_ms": 50  },
