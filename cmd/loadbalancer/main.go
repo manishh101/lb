@@ -141,6 +141,7 @@ func main() {
 	log.Printf("[MAIN] Algorithm:   %s", cfg.Algorithm)
 	log.Printf("[MAIN] Servers:     %d (legacy), %d (services), %d (routers)", len(cfg.Servers), len(cfg.Services), len(cfg.Routers))
 	log.Printf("[MAIN] Rate Limit:  %.0f rps/IP (burst %d)", cfg.RateLimitRPS, cfg.RateLimitBurst)
+	log.Printf("[MAIN] Middlewares: %d configured", len(cfg.Middlewares))
 	log.Printf("[MAIN] Entrypoints:")
 	for name, ep := range cfg.EntryPoints {
 		tlsStatus := "off"
@@ -248,7 +249,6 @@ func (s *appState) initialize(cfg *config.Config) {
 	s.proxy = proxy.New(
 		globalRouter, s.collector, s.breakers,
 		cfg.MaxRetries, cfg.PerAttemptTimeoutSec,
-		cfg.RetryBackoffMs, cfg.RetryBackoffMaxMs,
 	)
 
 	// 5. Create specific proxy handlers for named Services
@@ -262,7 +262,6 @@ func (s *appState) initialize(cfg *config.Config) {
 		s.services[svcName] = proxy.New(
 			svcRouter, s.collector, s.breakers,
 			cfg.MaxRetries, cfg.PerAttemptTimeoutSec,
-			cfg.RetryBackoffMs, cfg.RetryBackoffMaxMs,
 		)
 	}
 
@@ -276,8 +275,7 @@ func (s *appState) initialize(cfg *config.Config) {
 			continue
 		}
 
-		// Resolve router-specific middlewares
-		// We reuse the entrypoint.ResolveMiddlewares func as it builds handlers given names and config.
+		// Resolve router-specific middlewares using the config-driven builder
 		middlewares := entrypoint.ResolveMiddlewares(rtCfg.Middlewares, cfg)
 		
 		// Wrap the service handler with the router's middlewares
@@ -310,7 +308,7 @@ func (s *appState) reload(path string) error {
 	s.cfg = newCfg
 	s.initialize(newCfg)
 
-	log.Printf("[MAIN] Hot reload complete: %d legacy servers, %d routers", len(newCfg.Servers), len(newCfg.Routers))
+	log.Printf("[MAIN] Hot reload complete: %d legacy servers, %d routers, %d middlewares",
+		len(newCfg.Servers), len(newCfg.Routers), len(newCfg.Middlewares))
 	return nil
 }
-

@@ -1,6 +1,11 @@
 #!/bin/bash
 set -e
 
+echo "Killing existing instances..."
+killall main || true
+killall server || true
+sleep 1
+
 echo "Starting backends..."
 go run backend/server.go 8001 10 Alpha-Fast &
 PID1=$!
@@ -15,7 +20,7 @@ echo "Starting load balancer..."
 go run cmd/loadbalancer/main.go &
 LBPID=$!
 
-sleep 2
+sleep 3
 
 echo "Testing /api/payment (Should go to Alpha-Fast :8001)"
 curl -s http://localhost:8080/api/payment | grep "Alpha-Fast" || echo "FAILED"
@@ -31,3 +36,5 @@ curl -s http://localhost:8080/other | grep -E "Gamma-All|Delta-All" || echo "FAI
 
 echo "Shutting down..."
 kill $LBPID $PID1 $PID2 $PID3 $PID4
+wait $LBPID 2>/dev/null || true
+echo "Done"

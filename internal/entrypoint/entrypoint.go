@@ -198,43 +198,23 @@ func (m *Manager) ShutdownAll(ctx context.Context) error {
 }
 
 // ResolveMiddlewares resolves a list of middleware names to actual middleware
-// functions using the provided config values. This maps the string names
-// used in entrypoint config to the actual middleware constructors.
+// functions. It uses the config-driven Builder when a middlewares block exists,
+// falling back to legacy name-based resolution.
 //
-// Supported middleware names:
-//   - "rate-limit"  → Per-IP rate limiting
-//   - "headers"     → Request header enrichment (X-Forwarded-For, X-Real-IP, X-Request-ID)
-//   - "cors"        → CORS headers + preflight handling
-//   - "basic-auth"  → HTTP Basic Authentication
+// This is the primary entry point for middleware resolution from entrypoints
+// and routers — called during startup and hot reload.
 func ResolveMiddlewares(names []string, cfg *config.Config) []middleware.Middleware {
+	builder := middleware.NewBuilder(cfg)
 	var resolved []middleware.Middleware
+
 	for _, name := range names {
-		switch name {
-		case "rate-limit":
-			rl := middleware.NewPerIPRateLimiter(cfg.RateLimitRPS, cfg.RateLimitBurst)
-			resolved = append(resolved, rl.Middleware())
-		case "headers":
-			resolved = append(resolved, middleware.RequestHeaders())
-		case "cors":
-			corsConfig := middleware.DefaultCORSConfig()
-			if len(cfg.CORS.AllowedOrigins) > 0 {
-				corsConfig.AllowedOrigins = cfg.CORS.AllowedOrigins
-			}
-			if len(cfg.CORS.AllowedMethods) > 0 {
-				corsConfig.AllowedMethods = cfg.CORS.AllowedMethods
-			}
-			if len(cfg.CORS.AllowedHeaders) > 0 {
-				corsConfig.AllowedHeaders = cfg.CORS.AllowedHeaders
-			}
-			resolved = append(resolved, middleware.CORS(corsConfig))
-		case "basic-auth":
-			resolved = append(resolved, middleware.BasicAuth(
-				cfg.DashboardAuth.Username,
-				cfg.DashboardAuth.Password,
-			))
-		default:
-			log.Printf("[ENTRYPOINT] Warning: unknown middleware %q, skipping", name)
+		mw, err := builder.Build(name)
+		if err != nil {
+			log.Printf("[ENTRYPOINT] Warning: failed to build middleware %q: %v", name, err)
+			continue
 		}
+		resolved = append(resolved, mw)
 	}
+
 	return resolved
 }

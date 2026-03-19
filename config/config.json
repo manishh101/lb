@@ -3,13 +3,72 @@
     "web": {
       "address": ":8080",
       "protocol": "http",
-      "middlewares": ["headers", "cors", "rate-limit"]
+      "middlewares": ["headers", "access-log", "rate-limit", "timeout"]
     },
     "dashboard": {
       "address": ":8081",
       "protocol": "http",
       "middlewares": ["basic-auth"]
     }
+  },
+  "middlewares": {
+    "rate-limit": {
+      "type": "rateLimit",
+      "config": {
+        "requests_per_second": 100,
+        "burst": 50
+      }
+    },
+    "basic-auth": {
+      "type": "basicAuth",
+      "config": {
+        "username": "admin",
+        "password": "secret"
+      }
+    },
+    "retry": {
+      "type": "retry",
+      "config": {
+        "attempts": 3,
+        "initial_interval_ms": 100
+      }
+    },
+    "access-log": {
+      "type": "accessLog",
+      "config": {
+        "file_path": "./logs/access.log"
+      }
+    },
+    "headers": {
+      "type": "headers",
+      "config": {}
+    },
+    "timeout": {
+      "type": "timeout",
+      "config": {
+        "high_sec": 5,
+        "medium_sec": 10,
+        "low_sec": 20
+      }
+    },
+    "circuit-breaker": {
+      "type": "circuitBreaker",
+      "config": {
+        "threshold": 3,
+        "recovery_timeout_sec": 15
+      }
+    },
+    "cors": {
+      "type": "cors",
+      "config": {
+        "allowed_origins": ["*"]
+      }
+    }
+  },
+  "timeouts": {
+    "high_sec": 5,
+    "medium_sec": 10,
+    "low_sec": 20
   },
   "listen_port": 8080,
   "dashboard_port": 8081,
@@ -25,7 +84,7 @@
   "per_attempt_timeout_sec": 5,
   "retry_backoff_ms": 100,
   "retry_backoff_max_ms": 5000,
-  "access_log_path": "access.log",
+  "access_log_path": "./logs/access.log",
   "hot_reload": true,
   "dashboard_auth": {
     "username": "admin",
@@ -44,7 +103,7 @@
     "payment-router": {
       "rule": "PathPrefix('/api/payment') || PathPrefix('/api/checkout')",
       "priority": 100,
-      "middlewares": ["rate-limit", "cors"],
+      "middlewares": ["rate-limit", "cors", "retry"],
       "service": "fast-backends"
     },
     "admin-router": {
@@ -56,7 +115,7 @@
     "default-router": {
       "rule": "PathPrefix('/')",
       "priority": 1,
-      "middlewares": ["rate-limit"],
+      "middlewares": ["rate-limit", "retry"],
       "service": "all-backends"
     }
   },

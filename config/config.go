@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
 // HealthCheckConfig holds per-server health check settings.
@@ -42,6 +43,23 @@ type ServiceConfig struct {
 type DashboardAuth struct {
 	Username string `json:"username,omitempty"`
 	Password string `json:"password,omitempty"`
+}
+
+// MiddlewareConfig holds the configuration for a single named middleware instance.
+// The Type field determines which middleware to instantiate, and Config holds
+// the type-specific configuration as raw JSON for deferred parsing.
+// Inspired by Traefik's dynamic.Middleware configuration.
+type MiddlewareConfig struct {
+	Type   string          `json:"type"`
+	Config json.RawMessage `json:"config,omitempty"`
+}
+
+// TimeoutConfig holds priority-aware timeout settings.
+// Each priority level gets its own HTTP client timeout.
+type TimeoutConfig struct {
+	HighSec   int `json:"high_sec,omitempty"`
+	MediumSec int `json:"medium_sec,omitempty"`
+	LowSec    int `json:"low_sec,omitempty"`
 }
 
 // TLSConfig holds TLS/HTTPS configuration.
@@ -95,6 +113,14 @@ type Config struct {
 	TLS               TLSConfig     `json:"tls,omitempty"`
 	CORS              CORSConfig    `json:"cors,omitempty"`
 	HotReload         bool          `json:"hot_reload,omitempty"`
+
+	// Middlewares defines named middleware instances with type-specific config.
+	// Each middleware can be referenced by name from entrypoints and routers.
+	// Inspired by Traefik's dynamic middleware configuration.
+	Middlewares map[string]*MiddlewareConfig `json:"middlewares,omitempty"`
+
+	// Timeouts defines priority-aware request timeout settings.
+	Timeouts TimeoutConfig `json:"timeouts,omitempty"`
 
 	// EntryPoints defines named entrypoints, each running as an independent server.
 	// If not specified, entrypoints are synthesized from listen_port and dashboard_port.
@@ -168,6 +194,25 @@ func setDefaults(cfg *Config) {
 	}
 	if cfg.AccessLogPath == "" {
 		cfg.AccessLogPath = "access.log"
+	}
+
+	// Priority-aware timeout defaults
+	if cfg.Timeouts.HighSec == 0 {
+		cfg.Timeouts.HighSec = 5
+	}
+	if cfg.Timeouts.MediumSec == 0 {
+		cfg.Timeouts.MediumSec = 10
+	}
+	if cfg.Timeouts.LowSec == 0 {
+		cfg.Timeouts.LowSec = 20
+	}
+
+	// Ensure access log directory exists
+	if cfg.AccessLogPath != "" {
+		dir := filepath.Dir(cfg.AccessLogPath)
+		if dir != "." && dir != "" {
+			_ = os.MkdirAll(dir, 0755)
+		}
 	}
 
 	// Apply per-server health check defaults for legacy global servers
