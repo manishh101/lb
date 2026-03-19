@@ -2,14 +2,11 @@ package balancer
 
 import (
 	"math/rand"
-	"time"
 
 	"intelligent-lb/internal/metrics"
 )
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
+
 
 // Algorithm defines the interface for all load balancing algorithms.
 // Each algorithm selects one server from the candidates based on stats and priority.
