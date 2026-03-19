@@ -455,6 +455,127 @@ On `SIGTERM` or `Ctrl+C`, all entrypoints stop accepting new connections, drain 
 
 ---
 
+## Middleware Pipeline
+
+Inspired by [Traefik's middleware architecture](https://doc.traefik.io/traefik/middlewares/overview/), the load balancer implements a **config-driven middleware pipeline**. Each middleware wraps the next `http.Handler` in the chain, and the final handler is the proxy forwarder.
+
+```
+Request → Headers → AccessLog → RateLimit → Timeout → Retry → CircuitBreaker → Proxy → Backend
+```
+
+### Middleware Configuration
+
+Middlewares are defined in a `middlewares` block in `config.json`. Each middleware has a unique name, a `type`, and type-specific `config`:
+
+```json
+{
+  "middlewares": {
+    "rate-limit": {
+      "type": "rateLimit",
+      "config": {
+        "requests_per_second": 100,
+        "burst": 50
+      }
+    },
+    "basic-auth": {
+      "type": "basicAuth",
+      "config": {
+        "username": "admin",
+        "password": "secret"
+      }
+    },
+    "retry": {
+      "type": "retry",
+      "config": {
+        "attempts": 3,
+        "initial_interval_ms": 100
+      }
+    },
+    "access-log": {
+      "type": "accessLog",
+      "config": {
+        "file_path": "./logs/access.log"
+      }
+    }
+  }
+}
+```
+
+Middlewares can be attached to **entrypoints** (applied to all traffic) or **routers** (applied to matching requests):
+
+```json
+{
+  "entrypoints": {
+    "web": {
+      "address": ":8080",
+      "middlewares": ["headers", "access-log", "rate-limit", "timeout"]
+    }
+  },
+  "routers": {
+    "payment-router": {
+      "rule": "PathPrefix('/api/payment')",
+      "middlewares": ["rate-limit", "retry"],
+      "service": "fast-backends"
+    }
+  }
+}
+```
+
+### Available Middleware Types
+
+| Type | Name | Description |
+|------|------|-------------|
+| `rateLimit` | Rate Limiter | Per-client-IP rate limiting using token bucket. Returns 429 with `Retry-After`. |
+| `basicAuth` | Basic Auth | HTTP Basic Authentication. 401 for missing, 403 for wrong credentials. |
+| `retry` | Retry | Exponential backoff retry (100→200→400ms). Only retries on 5xx, never 4xx. Adds `X-Attempts` header. |
+| `accessLog` | Access Logger | Structured JSON access log to file. Fields: timestamp, request_id, client_ip, method, path, status_code, latency_ms, bytes_sent. |
+| `headers` | Request Headers | Enriches with `X-Forwarded-For`, `X-Real-IP`, `X-Forwarded-Proto`, `X-Request-ID`. |
+| `timeout` | Priority Timeout | Sets context deadline by priority: HIGH=5s, MEDIUM=10s, LOW=20s. Configurable. |
+| `circuitBreaker` | Circuit Breaker | Standalone CB middleware. Opens after N failures, returns 503. CLOSED→OPEN→HALF_OPEN. |
+| `cors` | CORS | Sets CORS headers and handles preflight OPTIONS requests. |
+
+### Middleware Config Reference
+
+#### `rateLimit`
+| Field | Default | Description |
+|-------|---------|-------------|
+| `requests_per_second` | 100 | Max sustained requests per second per client IP |
+| `burst` | 200 | Maximum burst size allowed |
+
+#### `basicAuth`
+| Field | Default | Description |
+|-------|---------|-------------|
+| `username` | — | Required username |
+| `password` | — | Required password |
+
+#### `retry`
+| Field | Default | Description |
+|-------|---------|-------------|
+| `attempts` | 3 | Maximum total attempts (including first) |
+| `initial_interval_ms` | 100 | Initial backoff interval (doubles each retry) |
+
+#### `accessLog`
+| Field | Default | Description |
+|-------|---------|-------------|
+| `file_path` | `access.log` | Path to the JSON access log file |
+
+#### `timeout`
+| Field | Default | Description |
+|-------|---------|-------------|
+| `high_sec` | 5 | Timeout for HIGH priority requests |
+| `medium_sec` | 10 | Timeout for MEDIUM priority requests |
+| `low_sec` | 20 | Timeout for LOW priority requests |
+
+#### `circuitBreaker`
+| Field | Default | Description |
+|-------|---------|-------------|
+| `threshold` | 3 | Consecutive failures before circuit opens |
+| `recovery_timeout_sec` | 15 | Seconds before OPEN → HALF_OPEN probe |
+
+### Backward Compatibility
+
+If the `middlewares` block is **not present** in `config.json`, the system falls back to legacy name-based middleware resolution using global config fields (`rate_limit_rps`, `dashboard_auth`, etc.). Existing config files work without changes.
+
 ## Configuration
 
 Edit `config/config.json`:
