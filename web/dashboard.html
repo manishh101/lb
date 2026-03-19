@@ -6,51 +6,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Intelligent Load Balancer — Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        *,
-        *::before,
-        *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-            --bg: #f4f6f9;
-            --bg-card: #ffffff;
-            --bg-card-hover: #f8fafc;
-            --border: #e2e8f0;
-            --border-light: #f1f5f9;
-            --text: #1e293b;
-            --text-secondary: #475569;
-            --text-tertiary: #94a3b8;
-            --accent: #4f46e5;
-            --accent-light: #eef2ff;
-            --green: #16a34a;
-            --green-bg: #f0fdf4;
-            --green-border: #bbf7d0;
-            --red: #dc2626;
-            --red-bg: #fef2f2;
-            --red-border: #fecaca;
-            --amber: #d97706;
-            --amber-bg: #fffbeb;
-            --amber-border: #fde68a;
-            --blue: #2563eb;
-            --blue-light: #dbeafe;
-            --cyan: #0891b2;
-            --cyan-bg: #ecfeff;
-            --radius: 12px;
-            --radius-sm: 6px;
-            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-            --shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+            /* Dark Terminal Theme */
+            --bg: #0a0e17;
+            --bg-card: #111827;
+            --bg-card-hover: #1f2937;
+            --border: #1e293b;
+            --border-light: #334155;
+            --text: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-tertiary: #64748b;
+            --accent: #60a5fa;
+            --accent-light: rgba(96, 165, 250, 0.1);
+            --green: #4ade80;
+            --green-bg: rgba(74, 222, 128, 0.1);
+            --green-border: rgba(74, 222, 128, 0.2);
+            --red: #f87171;
+            --red-bg: rgba(248, 113, 113, 0.1);
+            --red-border: rgba(248, 113, 113, 0.2);
+            --amber: #fbbf24;
+            --amber-bg: rgba(251, 191, 36, 0.1);
+            --amber-border: rgba(251, 191, 36, 0.2);
+            --cyan: #22d3ee;
+            --cyan-bg: rgba(34, 211, 238, 0.1);
+            --radius: 8px;
+            --radius-sm: 4px;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+            
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'IBM Plex Mono', monospace;
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: var(--font-sans);
             background: var(--bg);
             color: var(--text);
             -webkit-font-smoothing: antialiased;
@@ -59,14 +52,13 @@
         }
 
         .mono {
-            font-family: 'JetBrains Mono', monospace;
+            font-family: var(--font-mono);
         }
 
-        /* Shell */
         .shell {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 28px 24px 48px;
+            padding: 24px 24px 48px;
         }
 
         /* Header */
@@ -74,95 +66,102 @@
             display: flex;
             align-items: flex-start;
             justify-content: space-between;
-            margin-bottom: 28px;
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
         }
 
         .header-left {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 6px;
         }
 
         .header h1 {
-            font-size: 22px;
+            font-size: 24px;
             font-weight: 700;
-            color: var(--text);
-            letter-spacing: -0.4px;
+            letter-spacing: -0.5px;
+            text-transform: uppercase;
+            font-family: var(--font-mono);
+            color: #fff;
         }
 
         .header-subtitle {
             font-size: 13px;
             color: var(--text-tertiary);
-            font-weight: 400;
+            font-family: var(--font-mono);
         }
 
         .header-meta {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             flex-wrap: wrap;
         }
 
-        .ws-badge, .feature-badge {
+        .badge {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            padding: 5px 14px;
-            border-radius: 20px;
+            padding: 4px 12px;
+            border-radius: 4px;
             font-size: 11px;
+            font-family: var(--font-mono);
             font-weight: 500;
             border: 1px solid var(--border);
-            transition: all 0.3s;
+            text-transform: uppercase;
         }
 
-        .ws-badge {
+        .badge.ws-unconnected {
             background: var(--red-bg);
             color: var(--red);
             border-color: var(--red-border);
         }
 
-        .ws-badge.live {
+        .badge.ws-live {
             background: var(--green-bg);
             color: var(--green);
             border-color: var(--green-border);
         }
 
-        .feature-badge {
+        .badge.neutral {
             background: var(--accent-light);
             color: var(--accent);
-            border-color: #c7d2fe;
+            border-color: rgba(96, 165, 250, 0.2);
         }
 
-        .feature-badge.tls {
-            background: var(--cyan-bg);
-            color: var(--cyan);
-            border-color: #a5f3fc;
-        }
-
-        .feature-badge.auth {
-            background: var(--amber-bg);
-            color: var(--amber);
-            border-color: var(--amber-border);
-        }
-
-        .ws-dot {
+        .badge .dot {
             width: 6px;
             height: 6px;
             border-radius: 50%;
             background: currentColor;
         }
 
-        .clock {
-            font-size: 13px;
-            color: var(--text-tertiary);
-            font-variant-numeric: tabular-nums;
+        .ws-live .dot {
+            animation: pulse-green 2s infinite ease-out;
+            box-shadow: 0 0 8px currentColor;
         }
 
-        /* KPI cards */
+        @keyframes pulse-green {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+
+        .clock {
+            font-size: 14px;
+            color: var(--accent);
+            background: rgba(0,0,0,0.3);
+            padding: 4px 12px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+        }
+
+        /* KPIs */
         .kpi-row {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 12px;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 16px;
             margin-bottom: 24px;
         }
 
@@ -170,13 +169,25 @@
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            padding: 18px 20px;
-            box-shadow: var(--shadow-sm);
+            padding: 16px;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
         }
+        
+        .kpi::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 4px; height: 100%;
+            background: var(--border-light);
+        }
+        .kpi.accent::before { background: var(--accent); }
+        .kpi.green::before { background: var(--green); }
+        .kpi.amber::before { background: var(--amber); }
 
         .kpi-label {
+            font-family: var(--font-mono);
             font-size: 11px;
-            font-weight: 500;
             color: var(--text-tertiary);
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -184,318 +195,240 @@
         }
 
         .kpi-value {
-            font-size: 28px;
-            font-weight: 700;
-            letter-spacing: -1px;
+            font-family: var(--font-mono);
+            font-size: 26px;
+            font-weight: 400;
             color: var(--text);
         }
 
-        .kpi-value.green {
-            color: var(--green);
+        .kpi-value.green { color: var(--green); }
+        .kpi-value.accent { color: var(--accent); }
+        .kpi-value.amber { color: var(--amber); }
+        .kpi-value.red { color: var(--red); }
+        
+        .kpi-sub {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--text-tertiary);
+            margin-top: 4px;
         }
 
-        .kpi-value.accent {
-            color: var(--accent);
+        /* Server Grid */
+        .section-title {
+            font-family: var(--font-mono);
+            font-size: 14px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 16px;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
         }
 
-        .kpi-value.red {
-            color: var(--red);
-        }
-
-        .kpi-value.small {
-            font-size: 16px;
-            letter-spacing: 0;
-        }
-
-        /* Server cards grid */
         .server-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-            margin-bottom: 24px;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
         }
 
         .server-card {
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            padding: 18px 20px;
-            box-shadow: var(--shadow-sm);
-            transition: box-shadow 0.2s, border-color 0.2s;
-        }
-
-        .server-card:hover {
+            padding: 16px;
             box-shadow: var(--shadow);
-            border-color: #cbd5e1;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .server-card:hover {
+            border-color: var(--border-light);
+            transform: translateY(-2px);
         }
 
         .server-card-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 14px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
         }
 
         .server-name {
-            font-size: 16px;
-            font-weight: 700;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            font-weight: 600;
         }
 
         .status-badge {
             display: inline-flex;
             align-items: center;
-            gap: 5px;
-            font-size: 11px;
-            font-weight: 600;
-            padding: 3px 10px;
-            border-radius: 20px;
+            gap: 6px;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            padding: 4px 8px;
+            border-radius: 4px;
             text-transform: uppercase;
-            letter-spacing: 0.3px;
+            letter-spacing: 0.5px;
         }
 
-        .status-badge.up {
-            background: var(--green-bg);
-            color: var(--green);
-        }
-
-        .status-badge.down {
-            background: var(--red-bg);
-            color: var(--red);
-            animation: pulse 1.5s ease-in-out infinite;
-        }
-
-        .status-dot {
-            width: 5px;
-            height: 5px;
-            border-radius: 50%;
-            background: currentColor;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
+        .status-badge.up { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+        .status-badge.down { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
 
         .server-stats {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
         }
 
-        .stat-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+        .server-stats table {
+            width: 100%;
+            border-collapse: collapse;
         }
-
-        .stat-label {
+        
+        .server-stats td {
+            padding: 4px 0;
+            font-family: var(--font-mono);
+        }
+        
+        .server-stats td:first-child {
             font-size: 12px;
             color: var(--text-tertiary);
-            font-weight: 400;
         }
-
-        .stat-value {
+        
+        .server-stats td:last-child {
             font-size: 13px;
-            font-weight: 600;
             color: var(--text-secondary);
+            text-align: right;
         }
 
-        .stat-value.fail {
-            color: var(--red);
-        }
-
-        .stat-value.muted {
-            color: var(--text-tertiary);
-            font-size: 11px;
-            font-weight: 500;
-        }
+        .stat-value.fail { color: var(--red); }
+        .stat-value.muted { color: var(--text-tertiary); font-size: 11px; }
 
         .circuit-tag {
             font-size: 10px;
-            font-weight: 700;
-            padding: 2px 10px;
-            border-radius: var(--radius-sm);
-            letter-spacing: 0.4px;
+            padding: 2px 6px;
+            border-radius: 4px;
             text-transform: uppercase;
+            border: 1px solid transparent;
         }
+        .circuit-tag.closed { background: var(--green-bg); color: var(--green); border-color: var(--green-border); }
+        .circuit-tag.open { background: var(--red-bg); color: var(--red); border-color: var(--red-border); }
+        .circuit-tag.half { background: var(--amber-bg); color: var(--amber); border-color: var(--amber-border); }
 
-        .circuit-tag.closed {
-            background: var(--green-bg);
-            color: var(--green);
-        }
-
-        .circuit-tag.open {
-            background: var(--red-bg);
-            color: var(--red);
-        }
-
-        .circuit-tag.half {
-            background: var(--amber-bg);
-            color: var(--amber);
-        }
-
-        .stat-row .priority-group {
+        .pri-group {
             display: flex;
             align-items: center;
-            gap: 4px;
+            justify-content: flex-end;
+            gap: 6px;
         }
+        .pri-h { color: var(--amber); }
+        .pri-l { color: var(--cyan); }
+        .pri-sep { color: var(--text-tertiary); }
 
-        .pri-h {
-            color: var(--amber);
-            font-weight: 700;
-            font-size: 13px;
-        }
-
-        .pri-sep {
-            color: var(--text-tertiary);
-            font-size: 12px;
-        }
-
-        .pri-l {
-            color: var(--text-tertiary);
-            font-size: 13px;
-        }
-
-        /* Charts */
-        .charts-row {
+        /* Charts & Logs Area */
+        .bottom-area {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            margin-bottom: 16px;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
         }
 
-        .chart-card {
+        .chart-container, .log-container {
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            padding: 20px 24px;
-            box-shadow: var(--shadow-sm);
+            padding: 20px;
+            box-shadow: var(--shadow);
         }
 
-        .chart-title {
-            font-size: 15px;
-            font-weight: 600;
-            color: var(--text);
-            margin-bottom: 16px;
-        }
-
-        /* Priority section */
-        .priority-section {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 20px 24px;
-            margin-bottom: 28px;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .priority-section .chart-title {
-            margin-bottom: 16px;
-        }
-
-        .priority-grid {
+        .charts-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+        
+        .chart-section {
+            height: 200px;
+            position: relative;
         }
 
-        .priority-item {
-            text-align: center;
+        .log-list {
+            list-style: none;
+            overflow-y: auto;
+            max-height: 424px;
+            padding-right: 8px;
         }
+        
+        .log-list::-webkit-scrollbar { width: 4px; }
+        .log-list::-webkit-scrollbar-track { background: var(--bg); }
+        .log-list::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 4px; }
 
-        .priority-item .pri-name {
-            font-size: 13px;
-            color: var(--text-tertiary);
-            margin-bottom: 6px;
+        .log-item {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            padding: 8px 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: grid;
+            grid-template-columns: 80px auto;
+            gap: 12px;
         }
-
-        .priority-item .pri-values {
-            font-size: 14px;
-            color: var(--text);
-        }
-
-        .priority-item .pri-high {
-            color: var(--amber);
-            font-weight: 600;
-        }
-
-        .priority-item .pri-low {
-            color: var(--blue);
-            font-weight: 600;
-        }
+        
+        .log-item:last-child { border-bottom: none; }
+        
+        .log-time { color: var(--text-tertiary); }
+        .log-msg { color: var(--text-secondary); }
+        
+        .log-highlight { color: #fff; font-weight: 500; }
+        .state-OPEN { color: var(--red); }
+        .state-HALF_OPEN { color: var(--amber); }
+        .state-CLOSED { color: var(--green); }
 
         /* Footer */
         .footer {
             text-align: center;
+            font-family: var(--font-mono);
             font-size: 12px;
             color: var(--text-tertiary);
-            padding-top: 20px;
+            padding-top: 32px;
+            border-top: 1px solid var(--border);
+            margin-top: 24px;
         }
 
-        .footer-features {
+        .api-links {
             display: flex;
             justify-content: center;
-            gap: 16px;
-            margin-top: 8px;
-            flex-wrap: wrap;
+            gap: 24px;
+            margin-top: 12px;
         }
-
-        .footer-feature {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 11px;
-            color: var(--text-tertiary);
+        
+        .api-links a {
+            color: var(--accent);
+            text-decoration: none;
+            transition: color 0.2s;
         }
-
-        .footer-feature .dot {
-            width: 4px;
-            height: 4px;
-            border-radius: 50%;
-            background: var(--accent);
+        .api-links a:hover {
+            color: #fff;
+            text-decoration: underline;
         }
-
+        
         /* Responsive */
-        @media (max-width: 1024px) {
-            .server-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            .kpi-row {
-                grid-template-columns: repeat(3, 1fr);
-            }
+        @media (max-width: 1200px) {
+            .kpi-row { grid-template-columns: repeat(3, 1fr); }
+            .bottom-area { grid-template-columns: 1fr; }
         }
-
-        @media (max-width: 960px) {
-            .kpi-row {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .charts-row {
-                grid-template-columns: 1fr;
-            }
-
-            .priority-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        @media (max-width: 640px) {
-            .shell {
-                padding: 20px 16px;
-            }
-
-            .header {
-                flex-direction: column;
-                gap: 12px;
-            }
-
-            .kpi-row {
-                grid-template-columns: 1fr 1fr;
-            }
-
-            .server-grid {
-                grid-template-columns: 1fr;
-            }
+        @media (max-width: 768px) {
+            .kpi-row { grid-template-columns: repeat(2, 1fr); }
+            .header { flex-direction: column; align-items: stretch; gap: 16px; }
+            .header-meta { justify-content: flex-start; }
+            .server-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -506,182 +439,238 @@
         <header class="header">
             <div class="header-left">
                 <h1>Intelligent Load Balancer</h1>
-                <span class="header-subtitle">Real-time Server Monitoring Dashboard</span>
+                <span class="header-subtitle">Traffic Control & Observer Dashboard</span>
             </div>
             <div class="header-meta">
-                <span id="ws-badge" class="ws-badge">
-                    <span class="ws-dot"></span>
-                    <span id="ws-text">Offline</span>
+                <span id="ws-badge" class="badge ws-unconnected">
+                    <span class="dot"></span>
+                    <span id="ws-text">Connecting...</span>
                 </span>
-                <span class="feature-badge">Middleware Pipeline</span>
-                <span class="feature-badge auth">Auth Enabled</span>
-                <span id="clock" class="clock mono"></span>
+                <span class="badge neutral" id="algo-badge">Algorithm: —</span>
+                <span id="clock" class="clock mono">00:00:00</span>
             </div>
         </header>
 
         <!-- KPIs -->
         <div class="kpi-row">
+            <div class="kpi accent">
+                <div class="kpi-label">RPS</div>
+                <div id="global-rps" class="kpi-value mono">0.0</div>
+                <div class="kpi-sub">Requests Per Second</div>
+            </div>
             <div class="kpi">
                 <div class="kpi-label">Total Requests</div>
                 <div id="total-req" class="kpi-value mono">0</div>
+                <div class="kpi-sub">Lifetime served</div>
             </div>
-            <div class="kpi">
+            <div class="kpi green">
                 <div class="kpi-label">Success Rate</div>
-                <div id="success-rate" class="kpi-value green mono">—</div>
+                <div id="success-rate" class="kpi-value mono">—</div>
+                <div class="kpi-sub">200-399 range</div>
+            </div>
+            <div class="kpi amber">
+                <div class="kpi-label">Active Conns</div>
+                <div id="active-conn" class="kpi-value mono">0</div>
+                <div class="kpi-sub">Currently in-flight</div>
             </div>
             <div class="kpi">
-                <div class="kpi-label">Healthy Servers</div>
+                <div class="kpi-label">Healthy Nodes</div>
                 <div id="healthy-count" class="kpi-value mono">0 / 0</div>
+                <div class="kpi-sub">Passing health checks</div>
             </div>
-            <div class="kpi">
-                <div class="kpi-label">Active Connections</div>
-                <div id="active-conn" class="kpi-value accent mono">0</div>
-            </div>
-            <div class="kpi">
-                <div class="kpi-label">Avg Latency</div>
-                <div id="avg-latency" class="kpi-value mono small">—</div>
+            <div class="kpi red">
+                <div class="kpi-label">Circuit Events</div>
+                <div id="circuit-kpi" class="kpi-value mono">0</div>
+                <div class="kpi-sub">State transitions</div>
             </div>
         </div>
 
-        <!-- Server Cards -->
+        <!-- Server Grid -->
+        <div class="section-title">Backend Nodes</div>
         <div id="server-grid" class="server-grid"></div>
 
-        <!-- Charts -->
-        <div class="charts-row">
-            <div class="chart-card">
-                <div class="chart-title">Request Distribution</div>
-                <canvas id="distChart" height="200"></canvas>
+        <!-- Bottom Area: Charts and Logs -->
+        <div class="bottom-area">
+            <div class="chart-container">
+                <div class="section-title">Telemetry</div>
+                <div class="charts-grid">
+                    <div class="chart-section">
+                        <canvas id="rpsChart"></canvas>
+                    </div>
+                    <div class="chart-section">
+                        <canvas id="latencyChart"></canvas>
+                    </div>
+                </div>
             </div>
-            <div class="chart-card">
-                <div class="chart-title">Latency (ms)</div>
-                <canvas id="latencyChart" height="200"></canvas>
+            
+            <div class="log-container">
+                <div class="section-title">Circuit Breaker Events</div>
+                <ul id="event-log" class="log-list">
+                    <li><div style="padding:16px; color:#64748b; font-size:12px; font-family:monospace">Waiting for events...</div></li>
+                </ul>
             </div>
         </div>
 
-        <!-- Priority Distribution -->
-        <div class="priority-section">
-            <div class="chart-title">Priority Distribution</div>
-            <div id="priority-grid" class="priority-grid"></div>
-        </div>
-
+        <!-- Footer -->
         <div class="footer">
-            <div>IOE Pulchowk Campus · BCT 2026 · Minor Project</div>
-            <div class="footer-features">
-                <span class="footer-feature"><span class="dot"></span>Middleware Pipeline</span>
-                <span class="footer-feature"><span class="dot"></span>Exponential Backoff</span>
-                <span class="footer-feature"><span class="dot"></span>JSON Access Logs</span>
-                <span class="footer-feature"><span class="dot"></span>Per-Server Health</span>
-                <span class="footer-feature"><span class="dot"></span>Canary Splitting</span>
-                <span class="footer-feature"><span class="dot"></span>Dashboard Auth</span>
-                <span class="footer-feature"><span class="dot"></span>Hot Reload</span>
-                <span class="footer-feature"><span class="dot"></span>TLS Support</span>
+            <p>IOE Pulchowk Campus · Post-Graduate Load Balancer implementation (2026)</p>
+            <div class="api-links">
+                <a href="/api/metrics" target="_blank">[GET /api/metrics]</a>
+                <a href="/api/history" target="_blank">[GET /api/history]</a>
+                <a href="/api/health" target="_blank">[GET /api/health]</a>
             </div>
         </div>
     </div>
 
     <script>
         // Palette
-        const COLORS = ['#4f46e5', '#16a34a', '#d97706', '#dc2626', '#2563eb', '#9333ea'];
+        const COLORS = ['#60a5fa', '#34d399', '#fbbf24', '#f87171', '#c084fc', '#2dd4bf'];
 
-        // Chart defaults for light theme
-        Chart.defaults.font.family = "'Inter', sans-serif";
-        Chart.defaults.font.size = 11;
-        Chart.defaults.color = '#94a3b8';
-        Chart.defaults.borderColor = '#f1f5f9';
+        Chart.defaults.color = '#64748b';
+        Chart.defaults.font.family = "'IBM Plex Mono', monospace";
+        Chart.defaults.font.size = 10;
+        Chart.defaults.borderColor = 'rgba(255,255,255,0.05)';
 
-        const distChart = new Chart(document.getElementById('distChart'), {
-            type: 'doughnut',
-            data: { labels: [], datasets: [{ data: [], backgroundColor: COLORS, borderWidth: 0 }] },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        labels: { color: '#475569' }
-                    }
+        const chartConfig = {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 0 }, // fast updates without animation bounce
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    backgroundColor: '#1e293b',
+                    titleColor: '#f8fafc',
+                    bodyColor: '#cbd5e1',
+                    borderColor: '#334155',
+                    borderWidth: 1,
+                    cornerRadius: 4,
                 }
+            },
+            scales: {
+                x: { grid: { display: false }, ticks: { maxTicksLimit: 10, maxRotation: 0 } },
+                y: { beginAtZero: true }
             }
-        });
+        };
 
-        const latHistory = {};
-        const timeLabels = [];
-        const MAX_PTS = 30;
+        const rpsChart = new Chart(document.getElementById('rpsChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Global RPS', data: [], borderColor: '#60a5fa', backgroundColor: 'rgba(96, 165, 250, 0.1)', tension: 0.2, fill: true, pointRadius: 0 }] },
+            options: { ...chartConfig, plugins: { title: { display: true, text: 'Requests per Second', color: '#cbd5e1', align: 'start' }, legend: {display: false} } }
+        });
 
         const latChart = new Chart(document.getElementById('latencyChart'), {
             type: 'line',
-            data: { labels: timeLabels, datasets: [] },
-            options: {
-                responsive: true,
-                scales: {
-                    x: {
-                        ticks: { color: '#94a3b8' },
-                        grid: { color: '#f1f5f9' }
-                    },
-                    y: {
-                        ticks: { color: '#94a3b8' },
-                        grid: { color: '#f1f5f9' },
-                        title: { display: true, text: 'ms', color: '#475569' }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        labels: { color: '#475569' }
-                    },
-                    tooltip: {
-                        backgroundColor: '#ffffff',
-                        titleColor: '#1e293b',
-                        bodyColor: '#475569',
-                        borderColor: '#e2e8f0',
-                        borderWidth: 1,
-                        padding: 10,
-                        cornerRadius: 8,
-                        bodyFont: { family: "'JetBrains Mono', monospace", size: 11 },
-                        callbacks: { label: ctx => ` ${ctx.dataset.label}  ${ctx.parsed.y.toFixed(1)}ms` }
-                    }
-                },
-                animation: { duration: 300 }
-            }
+            data: { labels: [], datasets: [] },
+            options: { ...chartConfig, plugins: { title: { display: true, text: 'P95 Latency (ms)', color: '#cbd5e1', align: 'start' }, legend: { display: true, labels: { boxWidth: 8, usePointStyle: true } } } }
         });
+
+        // State history arrays (2 minutes / 120 secs)
+        const MAX_PTS = 120;
+        let timeLabels = [];
+        let rpsHistory = [];
+        let latHistory = {};
+        let reportedEventsCount = 0;
 
         // WebSocket
         let ws;
         function connect() {
             const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
             ws = new WebSocket(`${proto}//${location.host}/ws`);
+            
             ws.onopen = () => {
-                document.getElementById('ws-badge').classList.add('live');
-                document.getElementById('ws-text').textContent = 'Connected';
+                const b = document.getElementById('ws-badge');
+                b.className = 'badge ws-live';
+                document.getElementById('ws-text').textContent = 'Live';
             };
+            
             ws.onclose = () => {
-                document.getElementById('ws-badge').classList.remove('live');
+                const b = document.getElementById('ws-badge');
+                b.className = 'badge ws-unconnected';
                 document.getElementById('ws-text').textContent = 'Offline';
-                setTimeout(connect, 2000);
+                setTimeout(connect, 3000);
             };
-            ws.onmessage = e => update(JSON.parse(e.data));
+            
+            ws.onmessage = e => {
+                try {
+                    const msg = JSON.parse(e.data);
+                    if (msg.type === 'history') {
+                        processHistory(msg.data);
+                    } else if (msg.type === 'tick') {
+                        updateSnapshot(msg.data);
+                    } else if (!msg.type) {
+                        // Legacy generic fallback (shouldn't be needed with our new hub)
+                        updateSnapshot(msg);
+                    }
+                } catch (err) {
+                    console.error("Parse error:", err);
+                }
+            };
         }
 
-        function update(servers) {
-            const entries = Object.entries(servers);
-            let totalReq = 0, totalOK = 0, healthy = 0, active = 0, totalLat = 0, latCount = 0;
-            const names = [], reqs = [];
-
-            entries.forEach(([, s]) => {
-                totalReq += s.total_requests;
-                totalOK += s.success_count;
-                active += s.active_connections;
-                if (s.is_healthy) healthy++;
-                names.push(s.name);
-                reqs.push(s.total_requests);
-                if (s.avg_latency_ms > 0) {
-                    totalLat += s.avg_latency_ms;
-                    latCount++;
-                }
+        function processHistory(historyArray) {
+            if (!historyArray || historyArray.length === 0) return;
+            
+            timeLabels = [];
+            rpsHistory = [];
+            latHistory = {};
+            
+            // Recompute from history to fill charts immediately
+            historyArray.forEach((snap, idx) => {
+                // Fake times based on current time going backwards if we don't have timestamps,
+                // but we can just use simple index or real time elapsed.
+                // Assuming snapshots are 1 sec apart and end *now*.
+                const d = new Date(Date.now() - (historyArray.length - 1 - idx) * 1000);
+                timeLabels.push(d.toLocaleTimeString([], {minute:'2-digit', second:'2-digit'}));
+                rpsHistory.push(snap.global_rps || 0);
+                
+                Object.values(snap.servers).forEach(s => {
+                    if (!latHistory[s.name]) latHistory[s.name] = [];
+                    latHistory[s.name].push(s.p95_latency_ms || 0); // Plotting P95
+                });
             });
 
-            document.getElementById('total-req').textContent = totalReq.toLocaleString();
-            document.getElementById('success-rate').textContent = totalReq > 0 ? (totalOK / totalReq * 100).toFixed(1) + '%' : '—';
-            document.getElementById('healthy-count').textContent = `${healthy} / ${entries.length}`;
+            // The last snapshot represents the current state
+            updateSnapshot(historyArray[historyArray.length - 1], false);
+            updateCharts();
+        }
+
+        function updateSnapshot(snap, pushToHistory = true) {
+            if (!snap || !snap.servers) return;
+            
+            const entries = Object.entries(snap.servers);
+            let active = 0;
+            
+            entries.forEach(([, s]) => {
+                active += s.active_connections;
+            });
+
+            // Update KPIs
+            document.getElementById('global-rps').textContent = (snap.global_rps || 0).toFixed(1);
+            document.getElementById('total-req').textContent = snap.total_requests.toLocaleString();
+            document.getElementById('success-rate').textContent = snap.success_rate > 0 ? snap.success_rate.toFixed(1) + '%' : '—';
+            document.getElementById('healthy-count').textContent = `${snap.healthy_count} / ${snap.total_count}`;
             document.getElementById('active-conn').textContent = active;
-            document.getElementById('avg-latency').textContent = latCount > 0 ? (totalLat / latCount).toFixed(1) + 'ms' : '—';
+            document.getElementById('algo-badge').innerHTML = `Algo: <span class="mono" style="color:#fff">${snap.algorithm || 'unknown'}</span>`;
+
+            // Circuit breaker events KPI & Log
+            const events = snap.circuit_events || [];
+            document.getElementById('circuit-kpi').textContent = events.length;
+            
+            if (events.length > 0 && events.length !== reportedEventsCount) {
+                reportedEventsCount = events.length;
+                const logHtml = events.slice().reverse().map(e => `
+                    <li class="log-item">
+                        <div class="log-time">${e.timestamp}</div>
+                        <div class="log-msg">
+                            <span class="log-highlight">${e.server_name}</span> 
+                            transitioned to <span class="state-${e.new_state}">${e.new_state}</span>
+                        </div>
+                    </li>
+                `).join('');
+                document.getElementById('event-log').innerHTML = logHtml;
+            }
 
             // Server cards
             document.getElementById('server-grid').innerHTML = entries.map(([url, s], i) => {
@@ -692,91 +681,80 @@
                     <div class="server-card-header">
                         <span class="server-name" style="color:${color}">${s.name}</span>
                         <span class="status-badge ${s.is_healthy ? 'up' : 'down'}">
-                            <span class="status-dot"></span>
+                            <span class="dot"></span>
                             ${s.is_healthy ? 'UP' : 'DOWN'}
                         </span>
                     </div>
                     <div class="server-stats">
-                        <div class="stat-row">
-                            <span class="stat-label">Requests</span>
-                            <span class="stat-value mono">${s.total_requests.toLocaleString()}</span>
-                        </div>
-                        <div class="stat-row">
-                            <span class="stat-label">Latency</span>
-                            <span class="stat-value mono">${s.avg_latency_ms.toFixed(1)}ms</span>
-                        </div>
-                        <div class="stat-row">
-                            <span class="stat-label">Active</span>
-                            <span class="stat-value mono">${s.active_connections}</span>
-                        </div>
-                        <div class="stat-row">
-                            <span class="stat-label">Success</span>
-                            <span class="stat-value mono">${sr}%</span>
-                        </div>
-                        <div class="stat-row">
-                            <span class="stat-label">Failures</span>
-                            <span class="stat-value mono ${s.failure_count > 0 ? 'fail' : ''}">${s.failure_count}</span>
-                        </div>
-                        <div class="stat-row">
-                            <span class="stat-label">Weight</span>
-                            <span class="stat-value mono">${s.weight}</span>
-                        </div>
-                        <div class="stat-row">
-                            <span class="stat-label">Circuit</span>
-                            <span class="circuit-tag ${cc}">${s.circuit_state}</span>
-                        </div>
-                        <div class="stat-row">
-                            <span class="stat-label">HIGH / LOW</span>
-                            <div class="priority-group">
-                                <span class="pri-h mono">${s.high_priority_count}</span>
-                                <span class="pri-sep">/</span>
-                                <span class="pri-l mono">${s.low_priority_count}</span>
-                            </div>
-                        </div>
-                        <div class="stat-row">
-                            <span class="stat-label">Last Checked</span>
-                            <span class="stat-value muted mono">${s.last_checked || '—'}</span>
-                        </div>
+                        <table>
+                            <tr><td>Requests</td><td>${s.total_requests.toLocaleString()}</td></tr>
+                            <tr><td>Active</td><td>${s.active_connections}</td></tr>
+                            <tr><td>Retries</td><td>${s.retry_count}</td></tr>
+                            <tr><td>P95 Latency</td><td>${s.p95_latency_ms ? s.p95_latency_ms.toFixed(1) : '0.0'} ms</td></tr>
+                            <tr><td>Success</td><td>${sr}%</td></tr>
+                            <tr><td>Circuit</td><td><span class="circuit-tag ${cc}">${s.circuit_state}</span></td></tr>
+                            <tr><td>Priority (H/L)</td><td>
+                                <div class="pri-group">
+                                    <span class="pri-h">${s.high_priority_count}</span>
+                                    <span class="pri-sep">/</span>
+                                    <span class="pri-l">${s.low_priority_count}</span>
+                                </div>
+                            </td></tr>
+                        </table>
                     </div>
                 </div>`;
             }).join('');
 
-            // Dist chart
-            distChart.data.labels = names;
-            distChart.data.datasets[0].data = reqs;
-            distChart.update();
+            // Push state history
+            if (pushToHistory) {
+                const nowStr = new Date().toLocaleTimeString([], {minute:'2-digit', second:'2-digit'});
+                timeLabels.push(nowStr);
+                rpsHistory.push(snap.global_rps || 0);
+                
+                entries.forEach(([, s]) => {
+                    if (!latHistory[s.name]) latHistory[s.name] = new Array(timeLabels.length-1).fill(0);
+                    latHistory[s.name].push(s.p95_latency_ms || 0);
+                });
 
-            // Latency chart
-            const timeLabel = new Date().toLocaleTimeString();
-            timeLabels.push(timeLabel);
-            if (timeLabels.length > MAX_PTS) timeLabels.shift();
+                // Trim to MAX_PTS
+                if (timeLabels.length > MAX_PTS) {
+                    timeLabels.shift();
+                    rpsHistory.shift();
+                    Object.keys(latHistory).forEach(name => {
+                        latHistory[name].shift();
+                    });
+                }
+                updateCharts();
+            }
+        }
 
-            entries.forEach(([, s]) => {
-                if (!latHistory[s.name]) latHistory[s.name] = [];
-                latHistory[s.name].push(s.avg_latency_ms);
-                if (latHistory[s.name].length > MAX_PTS) latHistory[s.name].shift();
-            });
+        function updateCharts() {
+            // RPS Chart
+            rpsChart.data.labels = timeLabels;
+            rpsChart.data.datasets[0].data = rpsHistory;
+            rpsChart.update();
 
-            latChart.data.datasets = entries.map(([, s], i) => ({
-                label: s.name,
-                data: latHistory[s.name] || [],
+            // P95 Latency Chart
+            const datasets = Object.keys(latHistory).map((name, i) => ({
+                label: name,
+                data: latHistory[name],
                 borderColor: COLORS[i % COLORS.length],
-                backgroundColor: 'transparent',
-                tension: 0.3,
+                segment: {
+                    borderColor: ctx => skipped(ctx, 'rgba(255,255,255,0.05)')
+                },
+                spanGaps: true,
+                borderWidth: 2,
                 pointRadius: 0,
+                tension: 0.1
             }));
-            latChart.update();
+            
+            function skipped(ctx, value) {
+                return ctx.p0.skip || ctx.p1.skip ? value : undefined;
+            }
 
-            // Priority grid
-            document.getElementById('priority-grid').innerHTML = entries.map(([, s]) => `
-                <div class="priority-item">
-                    <div class="pri-name">${s.name}</div>
-                    <div class="pri-values">
-                        <span class="pri-high">${s.high_priority_count}</span> HIGH /
-                        <span class="pri-low">${s.low_priority_count}</span> LOW
-                    </div>
-                </div>
-            `).join('');
+            latChart.data.labels = timeLabels;
+            latChart.data.datasets = datasets;
+            latChart.update();
         }
 
         // Clock
@@ -791,5 +769,4 @@
         connect();
     </script>
 </body>
-
 </html>

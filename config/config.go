@@ -7,13 +7,25 @@ import (
 	"path/filepath"
 )
 
-// HealthCheckConfig holds per-server health check settings.
+// HealthCheckConfig holds per-server or per-service health check settings.
 // All fields are optional — sensible defaults are applied from the global config.
 type HealthCheckConfig struct {
 	Path           string `json:"path,omitempty"`            // Health check endpoint path (default: "/health")
 	IntervalSec    int    `json:"interval_sec,omitempty"`    // Check interval in seconds (default: global health_interval_sec)
 	TimeoutSec     int    `json:"timeout_sec,omitempty"`     // HTTP timeout for health check (default: 2)
 	ExpectedStatus int    `json:"expected_status,omitempty"` // Expected HTTP status code (default: 200)
+}
+
+// CircuitBreakerConfig holds per-service circuit breaker settings.
+type CircuitBreakerConfig struct {
+	Threshold          int `json:"threshold"`            // Failures before tripping (default: global breaker_threshold)
+	RecoveryTimeoutSec int `json:"recovery_timeout_sec"` // Seconds before probe attempt (default: global breaker_timeout_sec)
+}
+
+// LoadBalancerConfig holds per-service load balancer settings.
+type LoadBalancerConfig struct {
+	Algorithm string `json:"algorithm,omitempty"` // "weighted", "roundrobin", "leastconn", "canary"
+	Sticky    bool   `json:"sticky,omitempty"`
 }
 
 // ServerConfig holds configuration for a single backend server.
@@ -33,9 +45,16 @@ type RouterConfig struct {
 	Service     string   `json:"service"`
 }
 
-// ServiceConfig holds configuration for a backend service (a grouping of servers).
+// ServiceConfig holds configuration for a named backend service.
+// Each service has its own backend pool with its own configuration for
+// load balancing, health checks, and circuit breakers.
+// Inspired by Traefik's service configuration in pkg/config/dynamic/config.go.
 type ServiceConfig struct {
-	Servers []ServerConfig `json:"servers"`
+	LoadBalancer   *LoadBalancerConfig   `json:"load_balancer,omitempty"`
+	HealthCheck    *HealthCheckConfig    `json:"health_check,omitempty"`
+	CircuitBreaker *CircuitBreakerConfig `json:"circuit_breaker,omitempty"`
+	Canary         bool                  `json:"canary,omitempty"`
+	Servers        []ServerConfig        `json:"servers"`
 }
 
 // DashboardAuth holds basic authentication credentials for the dashboard.
@@ -115,22 +134,20 @@ type Config struct {
 	HotReload         bool          `json:"hot_reload,omitempty"`
 
 	// Middlewares defines named middleware instances with type-specific config.
-	// Each middleware can be referenced by name from entrypoints and routers.
-	// Inspired by Traefik's dynamic middleware configuration.
 	Middlewares map[string]*MiddlewareConfig `json:"middlewares,omitempty"`
 
 	// Timeouts defines priority-aware request timeout settings.
 	Timeouts TimeoutConfig `json:"timeouts,omitempty"`
 
 	// EntryPoints defines named entrypoints, each running as an independent server.
-	// If not specified, entrypoints are synthesized from listen_port and dashboard_port.
-	// Inspired by Traefik's EntryPoints configuration.
 	EntryPoints map[string]*EntryPointConfig `json:"entrypoints,omitempty"`
 
 	// Routers define rule-based request routing.
 	Routers map[string]*RouterConfig `json:"routers,omitempty"`
 
-	// Services define named groups of backend servers.
+	// Services define named groups of backend servers with per-service config.
+	// Each service can have its own load_balancer, health_check, circuit_breaker,
+	// and canary settings. Inspired by Traefik's service configuration.
 	Services map[string]*ServiceConfig `json:"services,omitempty"`
 }
 
@@ -178,7 +195,7 @@ func setDefaults(cfg *Config) {
 		cfg.ShutdownTimeoutSec = 15
 	}
 	if cfg.RateLimitRPS == 0 {
-		cfg.RateLimitRPS = 100 // per-IP: 100 requests per second
+		cfg.RateLimitRPS = 100
 	}
 	if cfg.RateLimitBurst == 0 {
 		cfg.RateLimitBurst = 200
@@ -232,31 +249,76 @@ func setDefaults(cfg *Config) {
 		}
 	}
 
-	// Apply health check and weight defaults for named services
+	// Backward compatibility: if no services defined but flat servers list exists,
+	// wrap into a "default" service. This ensures old configs keep working.
+	if len(cfg.Services) == 0 && len(cfg.Servers) > 0 {
+		cfg.Services = map[string]*ServiceConfig{
+			"default": {
+				Servers: cfg.Servers,
+			},
+		}
+	}
+
+	// Apply per-service defaults
 	for _, svc := range cfg.Services {
+		// Service-level health check defaults
+		if svc.HealthCheck == nil {
+			svc.HealthCheck = &HealthCheckConfig{}
+		}
+		if svc.HealthCheck.Path == "" {
+			svc.HealthCheck.Path = "/health"
+		}
+		if svc.HealthCheck.IntervalSec == 0 {
+			svc.HealthCheck.IntervalSec = cfg.HealthInterval
+		}
+		if svc.HealthCheck.TimeoutSec == 0 {
+			svc.HealthCheck.TimeoutSec = 2
+		}
+		if svc.HealthCheck.ExpectedStatus == 0 {
+			svc.HealthCheck.ExpectedStatus = 200
+		}
+
+		// Service-level circuit breaker defaults
+		if svc.CircuitBreaker == nil {
+			svc.CircuitBreaker = &CircuitBreakerConfig{}
+		}
+		if svc.CircuitBreaker.Threshold == 0 {
+			svc.CircuitBreaker.Threshold = cfg.BreakerThreshold
+		}
+		if svc.CircuitBreaker.RecoveryTimeoutSec == 0 {
+			svc.CircuitBreaker.RecoveryTimeoutSec = cfg.BreakerTimeoutSec
+		}
+
+		// Service-level load balancer defaults
+		if svc.LoadBalancer == nil {
+			svc.LoadBalancer = &LoadBalancerConfig{}
+		}
+		if svc.LoadBalancer.Algorithm == "" {
+			svc.LoadBalancer.Algorithm = cfg.Algorithm
+		}
+
+		// Per-server defaults within the service (inherit from service-level health check)
 		for i := range svc.Servers {
 			s := &svc.Servers[i]
 			if s.Weight == 0 {
 				s.Weight = 1
 			}
 			if s.HealthCheck.Path == "" {
-				s.HealthCheck.Path = "/health"
+				s.HealthCheck.Path = svc.HealthCheck.Path
 			}
 			if s.HealthCheck.IntervalSec == 0 {
-				s.HealthCheck.IntervalSec = cfg.HealthInterval
+				s.HealthCheck.IntervalSec = svc.HealthCheck.IntervalSec
 			}
 			if s.HealthCheck.TimeoutSec == 0 {
-				s.HealthCheck.TimeoutSec = 2
+				s.HealthCheck.TimeoutSec = svc.HealthCheck.TimeoutSec
 			}
 			if s.HealthCheck.ExpectedStatus == 0 {
-				s.HealthCheck.ExpectedStatus = 200
+				s.HealthCheck.ExpectedStatus = svc.HealthCheck.ExpectedStatus
 			}
 		}
 	}
 
-	// Backward compatibility: synthesize entrypoints from legacy listen_port/dashboard_port
-	// if the new entrypoints block is not present. This mirrors Traefik's default entrypoint
-	// generation when no explicit entrypoints are configured.
+	// Backward compatibility: synthesize entrypoints from legacy ports
 	if len(cfg.EntryPoints) == 0 {
 		cfg.EntryPoints = map[string]*EntryPointConfig{
 			"web": {
@@ -268,7 +330,6 @@ func setDefaults(cfg *Config) {
 				Protocol: "http",
 			},
 		}
-		// Inherit global TLS config for the web entrypoint if enabled
 		if cfg.TLS.Enabled {
 			cfg.EntryPoints["web"].Protocol = "https"
 			cfg.EntryPoints["web"].TLS = &cfg.TLS

@@ -13,16 +13,13 @@ import (
 	"time"
 
 	"intelligent-lb/config"
-	"intelligent-lb/internal/balancer"
 	"intelligent-lb/internal/dashboard"
 	"intelligent-lb/internal/entrypoint"
-	"intelligent-lb/internal/health"
 	"intelligent-lb/internal/hotreload"
 	"intelligent-lb/internal/logging"
-	"intelligent-lb/internal/metrics"
 	"intelligent-lb/internal/middleware"
-	"intelligent-lb/internal/proxy"
 	"intelligent-lb/internal/router"
+	"intelligent-lb/internal/service"
 	"intelligent-lb/internal/tlsutil"
 )
 
@@ -30,33 +27,36 @@ import (
 type appState struct {
 	mu        sync.RWMutex
 	cfg       *config.Config
-	collector *metrics.Collector
-	breakers  map[string]*health.Breaker
-	monitor   *health.Monitor
-
-	// Legacy global proxy (when no routers match)
-	proxy     *proxy.Handler
+	svcMgr    *service.Manager
 
 	// Rule-based routing
 	routerMgr *router.Manager
-	services  map[string]http.Handler
 }
 
 // ServeHTTP implements the top-level routing logic. It evaluates the request
 // against rule-based routers. If a match is found, it forwards to the router's
 // middleware-wrapped service handler. If no match (or no routers configured),
-// it falls back to the legacy priority-based global proxy pool.
+// it falls back to the "default" service.
 func (s *appState) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	s.mu.RLock()
 	route := s.routerMgr.Route(req)
-	legacyProxy := s.proxy
+	svcMgr := s.svcMgr
 	s.mu.RUnlock()
 
 	if route != nil {
 		route.Handler.ServeHTTP(w, req)
 		return
 	}
-	legacyProxy.ServeHTTP(w, req)
+
+	// Fallback to "default" service (backward compatibility for flat server list)
+	defaultHandler := svcMgr.Get("default")
+	if defaultHandler != nil {
+		defaultHandler.ServeHTTP(w, req)
+		return
+	}
+
+	// If no default service and no route match, return 502
+	http.Error(w, "No matching service", http.StatusBadGateway)
 }
 
 func main() {
@@ -71,16 +71,20 @@ func main() {
 		log.Printf("[MAIN] Warning: failed to initialize access log file: %v", err)
 	}
 
-	// Build the application state
+	// Build the application state using service manager
 	state := &appState{cfg: cfg}
 	state.initialize(cfg)
 
-	// Initialize dashboard
-	hub := dashboard.NewHub(state.collector, "web/dashboard.html")
+	// Initialize dashboard using the service manager as SnapshotProvider.
+	// The service manager aggregates metrics from all service instances.
+	hub := dashboard.NewHub(state.svcMgr, "web/dashboard.html")
 	hub.StartBroadcast()
 
-	// Start terminal metrics reporter
-	state.collector.StartReporter(cfg.MetricsIntervalSec)
+	// Start terminal metrics reporter using any available service's collector
+	for _, inst := range state.svcMgr.Instances() {
+		inst.Collector.StartReporter(cfg.MetricsIntervalSec)
+		break // just start one reporter for terminal output
+	}
 
 	// ── Auto-generate TLS certs if needed ─────────────────────────────
 	if cfg.TLS.Enabled && cfg.TLS.AutoGenerate {
@@ -102,28 +106,25 @@ func main() {
 	epManager := entrypoint.NewManager()
 
 	for epName, epCfg := range cfg.EntryPoints {
-		// Resolve middleware names to actual middleware functions
 		middlewares := entrypoint.ResolveMiddlewares(epCfg.Middlewares, cfg)
-
 		var handler http.Handler
 
 		if epName == "dashboard" {
-			// Dashboard entrypoint gets the dashboard handler
 			dashMux := http.NewServeMux()
-
-			// Dashboard routes with the dashboard mux
 			dashMux.Handle("/", http.HandlerFunc(hub.ServeHTTP))
 			dashMux.Handle("/ws", http.HandlerFunc(hub.HandleWS))
+			dashMux.Handle("/api/metrics", http.HandlerFunc(hub.HandleAPIMetrics))
+			dashMux.Handle("/api/history", http.HandlerFunc(hub.HandleAPIHistory))
+			dashMux.Handle("/api/health", http.HandlerFunc(hub.HandleAPIHealth))
 			dashMux.Handle("/stats", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
-				if err := json.NewEncoder(w).Encode(state.collector.Snapshot()); err != nil {
+				snap := state.svcMgr.DashboardSnap()
+				if err := json.NewEncoder(w).Encode(snap); err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 				}
 			}))
-
 			handler = dashMux
 		} else {
-			// All other entrypoints get the top-level app state dispatcher
 			handler = state
 		}
 
@@ -134,12 +135,18 @@ func main() {
 	// ── Start All Entrypoints ─────────────────────────────────────────
 	epManager.StartAll()
 
-	// Print startup banner
+	// ── Startup Banner ────────────────────────────────────────────────
 	log.Printf("[MAIN] ═══════════════════════════════════════════════════")
 	log.Printf("[MAIN] Intelligent Stateless Load Balancer")
 	log.Printf("[MAIN] ═══════════════════════════════════════════════════")
 	log.Printf("[MAIN] Algorithm:   %s", cfg.Algorithm)
-	log.Printf("[MAIN] Servers:     %d (legacy), %d (services), %d (routers)", len(cfg.Servers), len(cfg.Services), len(cfg.Routers))
+	svcCount := 0
+	serverCount := 0
+	for _, svc := range cfg.Services {
+		svcCount++
+		serverCount += len(svc.Servers)
+	}
+	log.Printf("[MAIN] Services:    %d (%d total servers), %d routers", svcCount, serverCount, len(cfg.Routers))
 	log.Printf("[MAIN] Rate Limit:  %.0f rps/IP (burst %d)", cfg.RateLimitRPS, cfg.RateLimitBurst)
 	log.Printf("[MAIN] Middlewares: %d configured", len(cfg.Middlewares))
 	log.Printf("[MAIN] Entrypoints:")
@@ -151,15 +158,31 @@ func main() {
 		log.Printf("[MAIN]   %-12s → %s (protocol: %s, tls: %s, middlewares: %v)",
 			name, ep.Address, ep.Protocol, tlsStatus, ep.Middlewares)
 	}
+	for svcName, svcCfg := range cfg.Services {
+		var serverNames []string
+		for _, srv := range svcCfg.Servers {
+			serverNames = append(serverNames, srv.Name)
+		}
+		algo := svcCfg.LoadBalancer.Algorithm
+		if svcCfg.Canary {
+			algo = "canary"
+		}
+		log.Printf("[MAIN] Service %-12s: algorithm=%s, canary=%v, health=%s/%ds, breaker=%d/%ds, servers=%v",
+			svcName, algo, svcCfg.Canary,
+			svcCfg.HealthCheck.Path, svcCfg.HealthCheck.IntervalSec,
+			svcCfg.CircuitBreaker.Threshold, svcCfg.CircuitBreaker.RecoveryTimeoutSec,
+			serverNames)
+	}
 	if cfg.HotReload {
 		log.Printf("[MAIN] Hot Reload:  ENABLED")
 	}
+	log.Printf("[MAIN] REST API:    /api/metrics, /api/history, /api/health")
 	log.Printf("[MAIN] ═══════════════════════════════════════════════════")
 
 	// ── Config Hot Reload ──────────────────────────────────────────────
 	if cfg.HotReload {
 		_, err := hotreload.NewWatcher("config/config.json", func(path string) error {
-			return state.reload(path)
+			return state.reload(path, hub)
 		})
 		if err != nil {
 			log.Printf("[MAIN] Warning: hot reload failed to start: %v", err)
@@ -173,7 +196,6 @@ func main() {
 	sig := <-quit
 	log.Printf("[MAIN] Received signal: %v — initiating graceful shutdown...", sig)
 
-	// 30-second timeout for graceful shutdown of all entrypoints
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -181,104 +203,25 @@ func main() {
 		log.Printf("[MAIN] Entrypoint shutdown errors: %v", err)
 	}
 
-	state.monitor.Stop()
-
+	state.svcMgr.Stop()
 	log.Println("[MAIN] Graceful shutdown complete. Goodbye!")
 }
 
 // initialize sets up all components from the given config.
 func (s *appState) initialize(cfg *config.Config) {
-	// 1. Gather all unique servers across global Servers and named Services
-	allServers := make(map[string]config.ServerConfig)
-	for _, srv := range cfg.Servers {
-		allServers[srv.URL] = srv
-	}
-	for _, svc := range cfg.Services {
-		for _, srv := range svc.Servers {
-			allServers[srv.URL] = srv
-		}
-	}
+	// Create service manager — each service gets its own metrics, health, breakers, balancer
+	s.svcMgr = service.NewManager(cfg)
 
-	var serverURLs []string
-	var serverNames []string
-	var serverWeights []int
-	var monitorServers []config.ServerConfig
-	for url, srv := range allServers {
-		serverURLs = append(serverURLs, url)
-		serverNames = append(serverNames, srv.Name)
-		serverWeights = append(serverWeights, srv.Weight)
-		monitorServers = append(monitorServers, srv)
-	}
-
-	// 2. Initialize global metrics, breakers, and health monitor
-	s.collector = metrics.New(serverURLs, serverNames, serverWeights)
-	s.breakers = make(map[string]*health.Breaker)
-	for _, url := range serverURLs {
-		s.breakers[url] = health.NewBreaker(
-			cfg.BreakerThreshold,
-			time.Duration(cfg.BreakerTimeoutSec)*time.Second,
-		)
-	}
-	
-	// Only start monitor if we have servers to monitor
-	if len(monitorServers) > 0 {
-		s.monitor = health.NewMonitor(monitorServers, s.collector, s.breakers)
-		s.monitor.Start()
-	}
-
-	// 3. Helper to create a balancer.Algorithm
-	getAlgo := func(name string) balancer.Algorithm {
-		switch name {
-		case "roundrobin":
-			return &balancer.RoundRobin{}
-		case "leastconn":
-			return balancer.LeastConnections{}
-		case "canary":
-			return &balancer.Canary{}
-		default:
-			return balancer.WeightedScore{}
-		}
-	}
-
-	// 4. Create legacy global proxy (for backward compatibility)
-	var globalURLs []string
-	for _, srv := range cfg.Servers {
-		globalURLs = append(globalURLs, srv.URL)
-	}
-	globalRouter := balancer.NewRouter(globalURLs, s.collector, s.breakers, getAlgo(cfg.Algorithm))
-	s.proxy = proxy.New(
-		globalRouter, s.collector, s.breakers,
-		cfg.MaxRetries, cfg.PerAttemptTimeoutSec,
-	)
-
-	// 5. Create specific proxy handlers for named Services
-	s.services = make(map[string]http.Handler)
-	for svcName, svcCfg := range cfg.Services {
-		var svcURLs []string
-		for _, srv := range svcCfg.Servers {
-			svcURLs = append(svcURLs, srv.URL)
-		}
-		svcRouter := balancer.NewRouter(svcURLs, s.collector, s.breakers, getAlgo(cfg.Algorithm))
-		s.services[svcName] = proxy.New(
-			svcRouter, s.collector, s.breakers,
-			cfg.MaxRetries, cfg.PerAttemptTimeoutSec,
-		)
-	}
-
-	// 6. Build the rule-based router manager
+	// Build the rule-based router manager
 	s.routerMgr = router.NewManager()
 	for rtName, rtCfg := range cfg.Routers {
-		// Resolve the target service
-		svcHandler, ok := s.services[rtCfg.Service]
-		if !ok {
+		svcHandler := s.svcMgr.Get(rtCfg.Service)
+		if svcHandler == nil {
 			log.Printf("[MAIN] Warning: router %q references unknown service %q", rtName, rtCfg.Service)
 			continue
 		}
 
-		// Resolve router-specific middlewares using the config-driven builder
 		middlewares := entrypoint.ResolveMiddlewares(rtCfg.Middlewares, cfg)
-		
-		// Wrap the service handler with the router's middlewares
 		finalHandler := svcHandler
 		if len(middlewares) > 0 {
 			chain := middleware.Chain(middlewares...)
@@ -291,8 +234,8 @@ func (s *appState) initialize(cfg *config.Config) {
 	}
 }
 
-// reload re-reads the config and swaps out mutable components.
-func (s *appState) reload(path string) error {
+// reload re-reads the config, logs changes, and swaps out mutable components.
+func (s *appState) reload(path string, hub *dashboard.Hub) error {
 	newCfg, err := config.Load(path)
 	if err != nil {
 		return fmt.Errorf("failed to parse config: %w", err)
@@ -301,14 +244,70 @@ func (s *appState) reload(path string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if s.monitor != nil {
-		s.monitor.Stop()
-	}
+	oldCfg := s.cfg
 
+	// Stop existing service monitors
+	s.svcMgr.Stop()
+
+	// Log what changed
+	logConfigDiff(oldCfg, newCfg)
+
+	// Rebuild everything from the new config
 	s.cfg = newCfg
 	s.initialize(newCfg)
 
-	log.Printf("[MAIN] Hot reload complete: %d legacy servers, %d routers, %d middlewares",
-		len(newCfg.Servers), len(newCfg.Routers), len(newCfg.Middlewares))
+	// Update dashboard hub with new service manager as provider
+	hub.SetProvider(s.svcMgr)
+
+	log.Printf("[MAIN] Hot reload complete: %d services, %d routers, %d middlewares",
+		len(newCfg.Services), len(newCfg.Routers), len(newCfg.Middlewares))
 	return nil
+}
+
+// logConfigDiff logs detailed differences between old and new configs.
+func logConfigDiff(old, new *config.Config) {
+	for name, newSvc := range new.Services {
+		oldSvc, existed := old.Services[name]
+		if !existed {
+			log.Printf("[HOTRELOAD] + Added service %q with %d servers", name, len(newSvc.Servers))
+			continue
+		}
+		oldURLs := make(map[string]config.ServerConfig)
+		for _, srv := range oldSvc.Servers {
+			oldURLs[srv.URL] = srv
+		}
+		newURLs := make(map[string]config.ServerConfig)
+		for _, srv := range newSvc.Servers {
+			newURLs[srv.URL] = srv
+		}
+		for url, srv := range newURLs {
+			if _, ok := oldURLs[url]; !ok {
+				log.Printf("[HOTRELOAD] + Service %q: added server %s (%s)", name, srv.Name, url)
+			} else if oldURLs[url].Weight != srv.Weight {
+				log.Printf("[HOTRELOAD] ~ Service %q: server %s weight changed %d → %d",
+					name, srv.Name, oldURLs[url].Weight, srv.Weight)
+			}
+		}
+		for url, srv := range oldURLs {
+			if _, ok := newURLs[url]; !ok {
+				log.Printf("[HOTRELOAD] - Service %q: removed server %s (%s)", name, srv.Name, url)
+			}
+		}
+		// Check health check changes
+		if oldSvc.HealthCheck != nil && newSvc.HealthCheck != nil {
+			if oldSvc.HealthCheck.IntervalSec != newSvc.HealthCheck.IntervalSec {
+				log.Printf("[HOTRELOAD] ~ Service %q: health interval changed %d → %d",
+					name, oldSvc.HealthCheck.IntervalSec, newSvc.HealthCheck.IntervalSec)
+			}
+		}
+		// Check canary changes
+		if oldSvc.Canary != newSvc.Canary {
+			log.Printf("[HOTRELOAD] ~ Service %q: canary changed %v → %v", name, oldSvc.Canary, newSvc.Canary)
+		}
+	}
+	for name := range old.Services {
+		if _, ok := new.Services[name]; !ok {
+			log.Printf("[HOTRELOAD] - Removed service %q", name)
+		}
+	}
 }

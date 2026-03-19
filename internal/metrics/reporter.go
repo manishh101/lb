@@ -21,14 +21,13 @@ func (c *Collector) StartReporter(intervalSec int) {
 
 // PrintReport outputs a single metrics snapshot to stdout.
 func (c *Collector) PrintReport() {
-	snap := c.Snapshot()
-	line := strings.Repeat("─", 80)
+	snap := c.DashboardSnap()
+	line := strings.Repeat("─", 110)
 	fmt.Println("\n" + line)
-	fmt.Printf("  %-12s %-8s %-10s %-10s %-8s %-10s %s\n",
-		"Server", "Health", "Requests", "Avg(ms)", "Active", "Success%", "Circuit")
+	fmt.Printf("  %-12s %-8s %-9s %-9s %-9s %-8s %-8s %-10s %s\n",
+		"Server", "Health", "Requests", "Avg(ms)", "P95(ms)", "Active", "Retries", "Success%", "Circuit")
 	fmt.Println(line)
-	var totalReq, totalOK int64
-	for _, s := range snap {
+	for _, s := range snap.Servers {
 		health := "UP  ✓"
 		if !s.IsHealthy {
 			health = "DOWN ✗"
@@ -37,18 +36,13 @@ func (c *Collector) PrintReport() {
 		if s.TotalRequests > 0 {
 			rate = float64(s.SuccessCount) / float64(s.TotalRequests) * 100
 		}
-		fmt.Printf("  %-12s %-8s %-10d %-10.1f %-8d %-10.1f %s\n",
-			s.Name, health, s.TotalRequests, s.AvgLatencyMs,
-			s.ActiveConnections, rate, s.CircuitState)
-		totalReq += s.TotalRequests
-		totalOK += s.SuccessCount
+		fmt.Printf("  %-12s %-8s %-9d %-9.1f %-9.1f %-8d %-8d %-10.1f %s\n",
+			s.Name, health, s.TotalRequests, s.AvgLatencyMs, s.P95LatencyMs,
+			s.ActiveConnections, s.RetryCount, rate, s.CircuitState)
 	}
 	fmt.Println(line)
-	globalRate := 0.0
-	if totalReq > 0 {
-		globalRate = float64(totalOK) / float64(totalReq) * 100
-	}
-	fmt.Printf("  TOTAL: %d requests  |  Success: %.1f%%  |  %s\n",
-		totalReq, globalRate, time.Now().Format("15:04:05"))
+	fmt.Printf("  TOTAL: %d requests  |  Success: %.1f%%  |  RPS: %.1f  |  Healthy: %d/%d  |  %s\n",
+		snap.TotalRequests, snap.SuccessRate, snap.GlobalRPS,
+		snap.HealthyCount, snap.TotalCount, time.Now().Format("15:04:05"))
 	fmt.Println(line)
 }

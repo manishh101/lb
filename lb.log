@@ -1,0 +1,389 @@
+2026/03/19 19:44:49 [LOGGING] Access log file initialized: ./logs/access.log
+2026/03/19 19:44:49 [SERVICE] Created service "fast-backends": 1 servers, algorithm=weighted, canary=false
+2026/03/19 19:44:49 [SERVICE] Created service "admin-backends": 1 servers, algorithm=weighted, canary=false
+2026/03/19 19:44:49 [SERVICE] Created service "all-backends": 2 servers, algorithm=weighted, canary=false
+2026/03/19 19:44:49 [DASHBOARD] WebSocket broadcast started (1s interval)
+2026/03/19 19:44:49 [REPORTER] Terminal metrics table started
+2026/03/19 19:44:49 [ACCESS-LOG] Writing access logs to ./logs/access.log
+2026/03/19 19:44:49 [ENTRYPOINT] Started 2 entrypoints
+2026/03/19 19:44:49 [MAIN] ═══════════════════════════════════════════════════
+2026/03/19 19:44:49 [MAIN] Intelligent Stateless Load Balancer
+2026/03/19 19:44:49 [MAIN] ═══════════════════════════════════════════════════
+2026/03/19 19:44:49 [MAIN] Algorithm:   weighted
+2026/03/19 19:44:49 [MAIN] Services:    3 (4 total servers), 3 routers
+2026/03/19 19:44:49 [MAIN] Rate Limit:  100 rps/IP (burst 200)
+2026/03/19 19:44:49 [MAIN] Middlewares: 8 configured
+2026/03/19 19:44:49 [MAIN] Entrypoints:
+2026/03/19 19:44:49 [MAIN]   web          → :8080 (protocol: http, tls: off, middlewares: [headers access-log rate-limit timeout])
+2026/03/19 19:44:49 [MAIN]   dashboard    → :8081 (protocol: http, tls: off, middlewares: [basic-auth])
+2026/03/19 19:44:49 [MAIN] Service fast-backends: algorithm=weighted, canary=false, health=/health/5s, breaker=3/15s, servers=[Alpha-Fast]
+2026/03/19 19:44:49 [MAIN] Service admin-backends: algorithm=weighted, canary=false, health=/health/5s, breaker=3/15s, servers=[Beta-Admin]
+2026/03/19 19:44:49 [MAIN] Service all-backends: algorithm=weighted, canary=false, health=/health/5s, breaker=3/15s, servers=[Gamma-All Delta-All]
+2026/03/19 19:44:49 [MAIN] Hot Reload:  ENABLED
+2026/03/19 19:44:49 [MAIN] REST API:    /api/metrics, /api/history, /api/health
+2026/03/19 19:44:49 [MAIN] ═══════════════════════════════════════════════════
+2026/03/19 19:44:49 [HOTRELOAD] Watching config file: config/config.json
+2026/03/19 19:44:49 [MONITOR] Health checks started for Beta-Admin (path=/health, interval=5s, timeout=2s, status=200)
+2026/03/19 19:44:49 [MONITOR] Health checks started for Gamma-All (path=/health, interval=5s, timeout=2s, status=200)
+2026/03/19 19:44:49 [MONITOR] Health checks started for Alpha-Fast (path=/health, interval=5s, timeout=2s, status=200)
+2026/03/19 19:44:49 [MONITOR] Health checks started for Delta-All (path=/health, interval=5s, timeout=2s, status=200)
+2026/03/19 19:44:49 [ENTRYPOINT] dashboard starting on :8081 (protocol: http)
+2026/03/19 19:44:49 [ENTRYPOINT] web starting on :8080 (protocol: http)
+2026/03/19 19:44:49 [ENTRYPOINT] dashboard failed: listen tcp :8081: bind: address already in use
+2026/03/19 19:44:49 [ENTRYPOINT] web failed: listen tcp :8080: bind: address already in use
+2026/03/19 19:44:54 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:44:54 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:44:54 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:44:54 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Server       Health   Requests  Avg(ms)   P95(ms)   Active   Retries  Success%   Circuit
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Beta-Admin   UP  ✓    0         0.0       0.0       0        0        0.0        CLOSED
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  TOTAL: 0 requests  |  Success: 0.0%  |  RPS: 0.0  |  Healthy: 1/1  |  19:44:59
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+2026/03/19 19:44:59 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:44:59 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:44:59 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:44:59 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:45:04 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:45:04 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:45:04 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:45:04 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Server       Health   Requests  Avg(ms)   P95(ms)   Active   Retries  Success%   Circuit
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Beta-Admin   UP  ✓    0         0.0       0.0       0        0        0.0        CLOSED
+2026/03/19 19:45:09 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  TOTAL: 0 requests  |  Success: 0.0%  |  RPS: 0.0  |  Healthy: 1/1  |  19:45:09
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+2026/03/19 19:45:09 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:45:09 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:45:09 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:45:14 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:45:14 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:45:14 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:45:14 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Server       Health   Requests  Avg(ms)   P95(ms)   Active   Retries  Success%   Circuit
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Beta-Admin   UP  ✓    0         0.0       0.0       0        0        0.0        CLOSED
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  TOTAL: 0 requests  |  Success: 0.0%  |  RPS: 0.0  |  Healthy: 1/1  |  19:45:19
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+2026/03/19 19:45:19 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:45:19 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:45:19 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:45:19 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:45:24 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:45:24 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:45:24 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:45:24 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Server       Health   Requests  Avg(ms)   P95(ms)   Active   Retries  Success%   Circuit
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Beta-Admin   UP  ✓    0         0.0       0.0       0        0        0.0        CLOSED
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  TOTAL: 0 requests  |  Success: 0.0%  |  RPS: 0.0  |  Healthy: 1/1  |  19:45:29
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+2026/03/19 19:45:29 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:45:29 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:45:29 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:45:29 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:45:34 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:45:34 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:45:34 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:45:34 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Server       Health   Requests  Avg(ms)   P95(ms)   Active   Retries  Success%   Circuit
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Beta-Admin   UP  ✓    0         0.0       0.0       0        0        0.0        CLOSED
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  TOTAL: 0 requests  |  Success: 0.0%  |  RPS: 0.0  |  Healthy: 1/1  |  19:45:39
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+2026/03/19 19:45:39 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:45:39 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:45:39 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:45:39 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:45:44 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:45:44 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:45:44 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:45:44 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Server       Health   Requests  Avg(ms)   P95(ms)   Active   Retries  Success%   Circuit
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Beta-Admin   UP  ✓    0         0.0       0.0       0        0        0.0        CLOSED
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  TOTAL: 0 requests  |  Success: 0.0%  |  RPS: 0.0  |  Healthy: 1/1  |  19:45:49
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+2026/03/19 19:45:49 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:45:49 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:45:49 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:45:49 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:45:54 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:45:54 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:45:54 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:45:54 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Server       Health   Requests  Avg(ms)   P95(ms)   Active   Retries  Success%   Circuit
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Beta-Admin   UP  ✓    0         0.0       0.0       0        0        0.0        CLOSED
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  TOTAL: 0 requests  |  Success: 0.0%  |  RPS: 0.0  |  Healthy: 1/1  |  19:45:59
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+2026/03/19 19:45:59 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:45:59 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:45:59 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:45:59 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:46:04 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:46:04 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:46:04 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:46:04 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Server       Health   Requests  Avg(ms)   P95(ms)   Active   Retries  Success%   Circuit
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Beta-Admin   UP  ✓    0         0.0       0.0       0        0        0.0        CLOSED
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  TOTAL: 0 requests  |  Success: 0.0%  |  RPS: 0.0  |  Healthy: 1/1  |  19:46:09
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+2026/03/19 19:46:09 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:46:09 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:46:09 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:46:09 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:46:14 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:46:14 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:46:14 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:46:14 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Server       Health   Requests  Avg(ms)   P95(ms)   Active   Retries  Success%   Circuit
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Beta-Admin   UP  ✓    0         0.0       0.0       0        0        0.0        CLOSED
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  TOTAL: 0 requests  |  Success: 0.0%  |  RPS: 0.0  |  Healthy: 1/1  |  19:46:19
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+2026/03/19 19:46:19 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:46:19 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:46:19 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:46:19 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:46:24 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:46:24 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:46:24 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:46:24 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Server       Health   Requests  Avg(ms)   P95(ms)   Active   Retries  Success%   Circuit
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Beta-Admin   UP  ✓    0         0.0       0.0       0        0        0.0        CLOSED
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  TOTAL: 0 requests  |  Success: 0.0%  |  RPS: 0.0  |  Healthy: 1/1  |  19:46:29
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+2026/03/19 19:46:29 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:46:29 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:46:29 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:46:29 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:46:34 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:46:34 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:46:34 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:46:34 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Server       Health   Requests  Avg(ms)   P95(ms)   Active   Retries  Success%   Circuit
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Beta-Admin   UP  ✓    0         0.0       0.0       0        0        0.0        CLOSED
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  TOTAL: 0 requests  |  Success: 0.0%  |  RPS: 0.0  |  Healthy: 1/1  |  19:46:39
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+2026/03/19 19:46:39 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:46:39 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:46:39 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:46:39 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:46:44 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:46:44 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:46:44 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:46:44 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Server       Health   Requests  Avg(ms)   P95(ms)   Active   Retries  Success%   Circuit
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Beta-Admin   UP  ✓    0         0.0       0.0       0        0        0.0        CLOSED
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  TOTAL: 0 requests  |  Success: 0.0%  |  RPS: 0.0  |  Healthy: 1/1  |  19:46:49
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+2026/03/19 19:46:49 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:46:49 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:46:49 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:46:49 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:46:54 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:46:54 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:46:54 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:46:54 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Server       Health   Requests  Avg(ms)   P95(ms)   Active   Retries  Success%   Circuit
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Beta-Admin   UP  ✓    0         0.0       0.0       0        0        0.0        CLOSED
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  TOTAL: 0 requests  |  Success: 0.0%  |  RPS: 0.0  |  Healthy: 1/1  |  19:46:59
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+2026/03/19 19:46:59 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:46:59 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:46:59 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:46:59 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:47:04 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:47:04 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:47:04 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:47:04 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Server       Health   Requests  Avg(ms)   P95(ms)   Active   Retries  Success%   Circuit
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Beta-Admin   UP  ✓    0         0.0       0.0       0        0        0.0        CLOSED
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  TOTAL: 0 requests  |  Success: 0.0%  |  RPS: 0.0  |  Healthy: 1/1  |  19:47:09
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+2026/03/19 19:47:09 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:47:09 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:47:09 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:47:09 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:47:14 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:47:14 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:47:14 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:47:14 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Server       Health   Requests  Avg(ms)   P95(ms)   Active   Retries  Success%   Circuit
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Beta-Admin   UP  ✓    0         0.0       0.0       0        0        0.0        CLOSED
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  TOTAL: 0 requests  |  Success: 0.0%  |  RPS: 0.0  |  Healthy: 1/1  |  19:47:19
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+2026/03/19 19:47:19 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:47:19 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:47:19 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:47:19 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:47:24 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:47:24 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:47:24 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:47:24 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Server       Health   Requests  Avg(ms)   P95(ms)   Active   Retries  Success%   Circuit
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Beta-Admin   UP  ✓    0         0.0       0.0       0        0        0.0        CLOSED
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  TOTAL: 0 requests  |  Success: 0.0%  |  RPS: 0.0  |  Healthy: 1/1  |  19:46:18
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+2026/03/19 19:46:18 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:46:18 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:46:18 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:46:18 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:46:23 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:46:23 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:46:23 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:46:23 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Server       Health   Requests  Avg(ms)   P95(ms)   Active   Retries  Success%   Circuit
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Beta-Admin   UP  ✓    0         0.0       0.0       0        0        0.0        CLOSED
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  TOTAL: 0 requests  |  Success: 0.0%  |  RPS: 0.0  |  Healthy: 1/1  |  19:46:28
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+2026/03/19 19:46:28 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:46:28 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:46:28 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:46:28 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:46:33 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:46:33 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:46:33 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:46:33 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Server       Health   Requests  Avg(ms)   P95(ms)   Active   Retries  Success%   Circuit
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Beta-Admin   UP  ✓    0         0.0       0.0       0        0        0.0        CLOSED
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  TOTAL: 0 requests  |  Success: 0.0%  |  RPS: 0.0  |  Healthy: 1/1  |  19:46:38
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+2026/03/19 19:46:38 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:46:38 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:46:38 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:46:38 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:46:43 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:46:43 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:46:43 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:46:43 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Server       Health   Requests  Avg(ms)   P95(ms)   Active   Retries  Success%   Circuit
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Beta-Admin   UP  ✓    0         0.0       0.0       0        0        0.0        CLOSED
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  TOTAL: 0 requests  |  Success: 0.0%  |  RPS: 0.0  |  Healthy: 1/1  |  19:46:48
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+2026/03/19 19:46:48 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:46:48 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:46:48 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:46:48 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:46:53 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:46:53 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:46:53 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:46:53 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Server       Health   Requests  Avg(ms)   P95(ms)   Active   Retries  Success%   Circuit
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Beta-Admin   UP  ✓    0         0.0       0.0       0        0        0.0        CLOSED
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+2026/03/19 19:46:58 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+  TOTAL: 0 requests  |  Success: 0.0%  |  RPS: 0.0  |  Healthy: 1/1  |  19:46:58
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+2026/03/19 19:46:58 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:46:58 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:46:58 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:47:03 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:47:03 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:47:03 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:47:03 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:47:08 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+2026/03/19 19:47:08 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+  Server       Health   Requests  Avg(ms)   P95(ms)   Active   Retries  Success%   Circuit
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Beta-Admin   UP  ✓    0         0.0       0.0       0        0        0.0        CLOSED
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  TOTAL: 0 requests  |  Success: 0.0%  |  RPS: 0.0  |  Healthy: 1/1  |  19:47:08
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+2026/03/19 19:47:08 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:47:08 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:47:13 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:47:13 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:47:13 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:47:13 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Server       Health   Requests  Avg(ms)   P95(ms)   Active   Retries  Success%   Circuit
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Beta-Admin   UP  ✓    0         0.0       0.0       0        0        0.0        CLOSED
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  TOTAL: 0 requests  |  Success: 0.0%  |  RPS: 0.0  |  Healthy: 1/1  |  19:47:18
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+2026/03/19 19:47:18 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:47:18 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
+2026/03/19 19:47:18 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:47:18 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:47:23 [MONITOR] Alpha-Fast           http://localhost:8001 UP   ✓
+2026/03/19 19:47:23 [MONITOR] Delta-All            http://localhost:8004 UP   ✓
+2026/03/19 19:47:23 [MONITOR] Beta-Admin           http://localhost:8002 UP   ✓
+2026/03/19 19:47:23 [MONITOR] Gamma-All            http://localhost:8003 UP   ✓
