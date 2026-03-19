@@ -35,7 +35,7 @@ func TestRouter_Select(t *testing.T) {
 	router := NewRouter([]string{"s1", "s2", "s3"}, collector, breakers, mockAlgo{})
 
 	t.Run("All servers healthy and closed", func(t *testing.T) {
-		chosen, err := router.Select("LOW")
+		chosen, err := router.Select("LOW", nil)
 		if err != nil {
 			t.Fatalf("Expected no error, got %v", err)
 		}
@@ -47,7 +47,7 @@ func TestRouter_Select(t *testing.T) {
 	t.Run("Unhealthy server is filtered out", func(t *testing.T) {
 		collector.SetHealth("s1", false)
 		
-		chosen, err := router.Select("LOW")
+		chosen, err := router.Select("LOW", nil)
 		if err != nil {
 			t.Fatalf("Expected no error, got %v", err)
 		}
@@ -59,7 +59,7 @@ func TestRouter_Select(t *testing.T) {
 	t.Run("Server with OPEN circuit is filtered out", func(t *testing.T) {
 		breakers["s2"].RecordFailure() // Trips s2 because threshold is 1
 		
-		chosen, err := router.Select("LOW")
+		chosen, err := router.Select("LOW", nil)
 		if err != nil {
 			t.Fatalf("Expected no error, got %v", err)
 		}
@@ -71,7 +71,7 @@ func TestRouter_Select(t *testing.T) {
 	t.Run("No servers available", func(t *testing.T) {
 		breakers["s3"].RecordFailure() // Trips s3
 		
-		_, err := router.Select("LOW")
+		_, err := router.Select("LOW", nil)
 		if err == nil {
 			t.Fatalf("Expected error when no servers are available, got nil")
 		}

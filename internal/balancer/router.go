@@ -28,13 +28,22 @@ func NewRouter(servers []string, m *metrics.Collector, b map[string]*health.Brea
 	}
 }
 
-// Select picks the best healthy server for the given priority level.
-func (r *Router) Select(priority string) (string, error) {
+// Select picks the best healthy server for the given priority level,
+// excluding any URLs passed in the excluded slice.
+func (r *Router) Select(priority string, excluded []string) (string, error) {
 	stats := r.metrics.Snapshot()
+
+	excludedMap := make(map[string]bool)
+	for _, e := range excluded {
+		excludedMap[e] = true
+	}
 
 	// FIX B5: Use IsOpen() (pure check, no side-effect) for candidate filtering
 	var candidates []string
 	for _, url := range r.servers {
+		if excludedMap[url] {
+			continue
+		}
 		s, ok := stats[url]
 		if !ok {
 			continue

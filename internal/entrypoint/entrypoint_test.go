@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"intelligent-lb/config"
+	"intelligent-lb/internal/middleware"
 )
 
 // TestEntryPoint_StartAndShutdown verifies that an entrypoint can start
@@ -144,21 +145,33 @@ func TestResolveMiddlewares(t *testing.T) {
 	}
 
 	t.Run("known middlewares resolve", func(t *testing.T) {
-		resolved := ResolveMiddlewares([]string{"rate-limit", "headers", "cors", "basic-auth"}, cfg)
+		builder := middleware.NewBuilder(cfg, nil)
+		resolved, err := ResolveMiddlewares([]string{"rate-limit", "headers", "cors", "basic-auth"}, builder)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
 		if len(resolved) != 4 {
 			t.Errorf("expected 4 middlewares, got %d", len(resolved))
 		}
 	})
 
 	t.Run("unknown middlewares are skipped", func(t *testing.T) {
-		resolved := ResolveMiddlewares([]string{"unknown-middleware"}, cfg)
+		builder := middleware.NewBuilder(cfg, nil)
+		resolved, err := ResolveMiddlewares([]string{"unknown-middleware"}, builder)
+		if err == nil {
+			t.Errorf("expected error for unknown name")
+		}
 		if len(resolved) != 0 {
 			t.Errorf("expected 0 middlewares for unknown name, got %d", len(resolved))
 		}
 	})
 
 	t.Run("empty list returns empty", func(t *testing.T) {
-		resolved := ResolveMiddlewares([]string{}, cfg)
+		builder := middleware.NewBuilder(cfg, nil)
+		resolved, err := ResolveMiddlewares([]string{}, builder)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
 		if len(resolved) != 0 {
 			t.Errorf("expected 0 middlewares for empty list, got %d", len(resolved))
 		}

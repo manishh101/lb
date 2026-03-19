@@ -198,23 +198,20 @@ func (m *Manager) ShutdownAll(ctx context.Context) error {
 }
 
 // ResolveMiddlewares resolves a list of middleware names to actual middleware
-// functions. It uses the config-driven Builder when a middlewares block exists,
-// falling back to legacy name-based resolution.
+// functions. It uses the config-driven Builder.
 //
 // This is the primary entry point for middleware resolution from entrypoints
 // and routers — called during startup and hot reload.
-func ResolveMiddlewares(names []string, cfg *config.Config) []middleware.Middleware {
-	builder := middleware.NewBuilder(cfg)
+func ResolveMiddlewares(names []string, builder *middleware.Builder) ([]middleware.Middleware, error) {
 	var resolved []middleware.Middleware
 
 	for _, name := range names {
 		mw, err := builder.Build(name)
 		if err != nil {
-			log.Printf("[ENTRYPOINT] Warning: failed to build middleware %q: %v", name, err)
-			continue
+			return nil, fmt.Errorf("failed to build middleware %q: %w", name, err)
 		}
 		resolved = append(resolved, mw)
 	}
 
-	return resolved
+	return resolved, nil
 }

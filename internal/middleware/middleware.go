@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
 
 	"intelligent-lb/config"
 )
@@ -25,16 +26,28 @@ func Chain(middlewares ...Middleware) Middleware {
 	}
 }
 
+// ServiceRegistry provides access to service-level components.
+type ServiceRegistry interface {
+	RecordCircuitBreakerResult(url string, success bool)
+}
+
 // Builder constructs middleware instances from the config.json middlewares block.
 // Each middleware is identified by a unique name and has a type + type-specific config.
 // Inspired by Traefik's middleware builder in pkg/server/middleware/.
 type Builder struct {
-	cfg *config.Config
+	cfg      *config.Config
+	registry ServiceRegistry
+	cache    map[string]Middleware
+	mu       sync.Mutex
 }
 
 // NewBuilder creates a new middleware Builder from the given config.
-func NewBuilder(cfg *config.Config) *Builder {
-	return &Builder{cfg: cfg}
+func NewBuilder(cfg *config.Config, registry ServiceRegistry) *Builder {
+	return &Builder{
+		cfg:      cfg,
+		registry: registry,
+		cache:    make(map[string]Middleware),
+	}
 }
 
 // rateLimitConfig is the deserialized config for the rateLimit middleware type.
@@ -84,15 +97,33 @@ type corsConfigJSON struct {
 // If the middleware name matches a legacy name (headers, cors) and no
 // middlewares block is configured, it falls back to legacy behavior.
 func (b *Builder) Build(name string) (Middleware, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	if mw, ok := b.cache[name]; ok {
+		return mw, nil
+	}
+
+	var mw Middleware
+	var err error
+
 	// Check the named middlewares config block first
 	if b.cfg.Middlewares != nil {
 		if mwCfg, ok := b.cfg.Middlewares[name]; ok {
-			return b.buildFromConfig(name, mwCfg)
+			mw, err = b.buildFromConfig(name, mwCfg)
 		}
 	}
 
-	// Fallback to legacy resolution for backward compatibility
-	return b.buildLegacy(name)
+	if mw == nil && err == nil {
+		// Fallback to legacy resolution for backward compatibility
+		mw, err = b.buildLegacy(name)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	b.cache[name] = mw
+	return mw, nil
 }
 
 // BuildChain builds an ordered chain of middlewares from a list of names.
@@ -185,7 +216,7 @@ func (b *Builder) buildFromConfig(name string, mwCfg *config.MiddlewareConfig) (
 		if cfg.RecoveryTimeoutSec == 0 {
 			cfg.RecoveryTimeoutSec = b.cfg.BreakerTimeoutSec
 		}
-		return NewCircuitBreaker(cfg.Threshold, cfg.RecoveryTimeoutSec), nil
+		return NewCircuitBreaker(b.registry), nil
 
 	case "cors":
 		var cfg corsConfigJSON

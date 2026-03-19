@@ -150,6 +150,14 @@ func NewRetry(maxAttempts int, initialIntervalMs int) Middleware {
 					Attempt:    attempt,
 				})
 
+				// Extract backend URL to exclude in the next attempt
+				if backendURL := lastWriter.headers.Get("X-Backend-URL"); backendURL != "" {
+					excluded := ExcludedFromContext(attemptReq.Context())
+					excluded = append(excluded, backendURL)
+					ctx = context.WithValue(r.Context(), excludedKey{}, excluded)
+					attemptReq = r.WithContext(ctx)
+				}
+
 				// Reset the buffered writer for next attempt
 				lastWriter = nil
 			}
@@ -186,4 +194,15 @@ func getCurrentAttempt(ctx context.Context) int {
 // AttemptFromContext returns the current retry attempt number from the request context.
 func AttemptFromContext(ctx context.Context) int {
 	return getCurrentAttempt(ctx)
+}
+
+// excludedKey is the context key for the list of excluded backend URLs.
+type excludedKey struct{}
+
+// ExcludedFromContext returns the list of excluded backend URLs from the request context.
+func ExcludedFromContext(ctx context.Context) []string {
+	if excluded, ok := ctx.Value(excludedKey{}).([]string); ok {
+		return excluded
+	}
+	return nil
 }

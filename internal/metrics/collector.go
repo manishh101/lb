@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"math"
 	"sort"
 	"sync"
 	"time"
@@ -154,8 +155,11 @@ func computeP95(latencies []float64) float64 {
 	copy(sorted, latencies)
 	sort.Float64s(sorted)
 
-	// P95 index: int(0.95 * n) clamped to [0, n-1]
-	idx := int(float64(n) * 0.95)
+	// P95 index
+	idx := int(math.Ceil(float64(n)*0.95)) - 1
+	if idx < 0 {
+		idx = 0
+	}
 	if idx >= n {
 		idx = n - 1
 	}
@@ -234,6 +238,19 @@ func (c *Collector) GetName(url string) string {
 	return url
 }
 
+// ClearLatencies resets the recent latencies and P95 latency for a server.
+// This is typically called when a server recovers from an outage so old
+// latencies do not pollute the P95 metric.
+func (c *Collector) ClearLatencies(url string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if s, ok := c.servers[url]; ok {
+		s.recentLatencies = nil
+		s.AvgLatencyMs = 0
+		s.P95LatencyMs = 0
+	}
+}
+
 // Snapshot returns a copy of all server stats for thread-safe reading.
 func (c *Collector) Snapshot() map[string]ServerStats {
 	c.mu.RLock()
@@ -243,6 +260,25 @@ func (c *Collector) Snapshot() map[string]ServerStats {
 		snap[url] = *s
 	}
 	return snap
+}
+
+// ImportMetrics restores metrics for servers from a previous snapshot.
+// This preserves counters during hot reloads.
+func (c *Collector) ImportMetrics(oldSnap map[string]ServerStats) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for url, oldStats := range oldSnap {
+		if s, ok := c.servers[url]; ok {
+			s.TotalRequests = oldStats.TotalRequests
+			s.SuccessCount = oldStats.SuccessCount
+			s.FailureCount = oldStats.FailureCount
+			s.RetryCount = oldStats.RetryCount
+			s.HighPriorityCount = oldStats.HighPriorityCount
+			s.LowPriorityCount = oldStats.LowPriorityCount
+			s.AvgLatencyMs = oldStats.AvgLatencyMs
+			s.P95LatencyMs = oldStats.P95LatencyMs
+		}
+	}
 }
 
 // DashboardSnap returns an enriched snapshot with global metrics for the dashboard.

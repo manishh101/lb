@@ -73,7 +73,9 @@ func main() {
 
 	// Build the application state using service manager
 	state := &appState{cfg: cfg}
-	state.initialize(cfg)
+	if err := state.initialize(cfg); err != nil {
+		log.Fatalf("[MAIN] Failed to initialize state: %v", err)
+	}
 
 	// Initialize dashboard using the service manager as SnapshotProvider.
 	// The service manager aggregates metrics from all service instances.
@@ -104,9 +106,13 @@ func main() {
 
 	// ── Create Entrypoint Manager ─────────────────────────────────────
 	epManager := entrypoint.NewManager()
+	mwBuilder := middleware.NewBuilder(cfg, state.svcMgr)
 
 	for epName, epCfg := range cfg.EntryPoints {
-		middlewares := entrypoint.ResolveMiddlewares(epCfg.Middlewares, cfg)
+		middlewares, err := entrypoint.ResolveMiddlewares(epCfg.Middlewares, mwBuilder)
+		if err != nil {
+			log.Fatalf("[MAIN] Failed to resolve middlewares for entrypoint %q: %v", epName, err)
+		}
 		var handler http.Handler
 
 		if epName == "dashboard" {
@@ -208,20 +214,25 @@ func main() {
 }
 
 // initialize sets up all components from the given config.
-func (s *appState) initialize(cfg *config.Config) {
+func (s *appState) initialize(cfg *config.Config) error {
 	// Create service manager — each service gets its own metrics, health, breakers, balancer
 	s.svcMgr = service.NewManager(cfg)
 
 	// Build the rule-based router manager
 	s.routerMgr = router.NewManager()
+	mwBuilder := middleware.NewBuilder(cfg, s.svcMgr)
+
 	for rtName, rtCfg := range cfg.Routers {
 		svcHandler := s.svcMgr.Get(rtCfg.Service)
 		if svcHandler == nil {
-			log.Printf("[MAIN] Warning: router %q references unknown service %q", rtName, rtCfg.Service)
-			continue
+			return fmt.Errorf("router %q references unknown service %q", rtName, rtCfg.Service)
 		}
 
-		middlewares := entrypoint.ResolveMiddlewares(rtCfg.Middlewares, cfg)
+		middlewares, err := entrypoint.ResolveMiddlewares(rtCfg.Middlewares, mwBuilder)
+		if err != nil {
+			return fmt.Errorf("router %q middleware resolution failed: %w", rtName, err)
+		}
+
 		finalHandler := svcHandler
 		if len(middlewares) > 0 {
 			chain := middleware.Chain(middlewares...)
@@ -229,9 +240,10 @@ func (s *appState) initialize(cfg *config.Config) {
 		}
 
 		if err := s.routerMgr.AddRoute(rtName, rtCfg.Rule, rtCfg.Priority, rtCfg.Middlewares, rtCfg.Service, finalHandler); err != nil {
-			log.Printf("[MAIN] Warning: failed to add router %q: %v", rtName, err)
+			return fmt.Errorf("failed to add router %q: %w", rtName, err)
 		}
 	}
+	return nil
 }
 
 // reload re-reads the config, logs changes, and swaps out mutable components.
@@ -248,13 +260,22 @@ func (s *appState) reload(path string, hub *dashboard.Hub) error {
 
 	// Stop existing service monitors
 	s.svcMgr.Stop()
+	oldSvcMgr := s.svcMgr
 
 	// Log what changed
 	logConfigDiff(oldCfg, newCfg)
 
 	// Rebuild everything from the new config
 	s.cfg = newCfg
-	s.initialize(newCfg)
+	if err := s.initialize(newCfg); err != nil {
+		log.Printf("[HOTRELOAD] Error initializing new config: %v (rolling back configuration may be needed)", err)
+		// We already stopped the old manager! A true transactional reload would build the new state first.
+		// For now, return the error.
+		return err
+	}
+
+	// Migrate metrics from old to new
+	s.svcMgr.ImportMetrics(oldSvcMgr)
 
 	// Update dashboard hub with new service manager as provider
 	hub.SetProvider(s.svcMgr)

@@ -27,9 +27,9 @@ func TestP95Calculation(t *testing.T) {
 			latencies[i] = float64(i + 1)
 		}
 		result := computeP95(latencies)
-		// P95 of [1..100] at index int(0.95*100)=95 -> value 96
-		if result != 96.0 {
-			t.Errorf("Expected 96.0 (P95 of 1-100), got %f", result)
+		// P95 of [1..100] at index int(math.Ceil(0.95*100))-1=94 -> value 95.0
+		if result != 95.0 {
+			t.Errorf("Expected 95.0 (P95 of 1-100), got %f", result)
 		}
 	})
 
@@ -40,9 +40,9 @@ func TestP95Calculation(t *testing.T) {
 			latencies[i] = float64(i + 1)
 		}
 		result := computeP95(latencies)
-		// index = int(0.95 * 20) = 19 -> value 20
-		if result != 20.0 {
-			t.Errorf("Expected 20.0, got %f", result)
+		// index = int(math.Ceil(0.95 * 20))-1 = 19 - 1 = 18 -> value 19.0
+		if result != 19.0 {
+			t.Errorf("Expected 19.0, got %f", result)
 		}
 	})
 

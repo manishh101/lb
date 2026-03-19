@@ -162,6 +162,9 @@ func Load(path string) (*Config, error) {
 		return nil, err
 	}
 	setDefaults(&cfg)
+	if err := validate(&cfg); err != nil {
+		return nil, err
+	}
 	return &cfg, nil
 }
 
@@ -343,3 +346,18 @@ func setDefaults(cfg *Config) {
 		}
 	}
 }
+
+// validate checks the config for semantic errors, like a backend appearing in multiple services.
+func validate(cfg *Config) error {
+	seenURLs := make(map[string]string)
+	for svcName, svc := range cfg.Services {
+		for _, srv := range svc.Servers {
+			if existingSvc, ok := seenURLs[srv.URL]; ok {
+				return fmt.Errorf("backend URL %q is configured in multiple services (%q and %q)", srv.URL, existingSvc, svcName)
+			}
+			seenURLs[srv.URL] = svcName
+		}
+	}
+	return nil
+}
+

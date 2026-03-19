@@ -73,11 +73,14 @@ func (b *Breaker) CanSend() bool {
 }
 
 // RecordSuccess resets the breaker to CLOSED state.
-func (b *Breaker) RecordSuccess() {
+// Returns true if the state transitioned from OPEN or HALF_OPEN.
+func (b *Breaker) RecordSuccess() bool {
 	b.mu.Lock()
 	defer b.mu.Unlock()
+	wasOpen := b.state != StateClosed
 	b.failureCount = 0
 	b.state = StateClosed
+	return wasOpen
 }
 
 // RecordFailure increments the failure counter and trips the breaker

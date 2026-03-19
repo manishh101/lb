@@ -158,6 +158,25 @@ func (m *Manager) Instances() map[string]*Instance {
 	return result
 }
 
+// ImportMetrics restores metrics from a previous manager.
+func (m *Manager) ImportMetrics(oldMgr *Manager) {
+	if oldMgr == nil {
+		return
+	}
+	oldSnaps := make(map[string]map[string]metrics.ServerStats)
+	for name, inst := range oldMgr.Instances() {
+		oldSnaps[name] = inst.Collector.Snapshot()
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for name, inst := range m.instances {
+		if oldSnap, ok := oldSnaps[name]; ok {
+			inst.Collector.ImportMetrics(oldSnap)
+		}
+	}
+}
+
 // GlobalCollector creates an aggregated collector across all services.
 // This is used by the dashboard to show combined metrics.
 func (m *Manager) GlobalCollector() *metrics.Collector {
@@ -245,6 +264,25 @@ func (m *Manager) Stop() {
 		if inst.Monitor != nil {
 			inst.Monitor.Stop()
 			log.Printf("[SERVICE] Stopped health monitor for service %q", name)
+		}
+	}
+}
+
+// RecordCircuitBreakerResult records success or failure on the selected backend's breaker.
+func (m *Manager) RecordCircuitBreakerResult(url string, success bool) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	for _, inst := range m.instances {
+		if b, ok := inst.Breakers[url]; ok {
+			if success {
+				if b.RecordSuccess() {
+					inst.Collector.ClearLatencies(url)
+				}
+			} else {
+				b.RecordFailure()
+			}
+			inst.Collector.SetCircuitState(url, b.State())
+			return
 		}
 	}
 }

@@ -80,8 +80,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// Get the current retry attempt from context (set by retry middleware)
 	attempt := middleware.AttemptFromContext(req.Context())
 
+	// Get excluded backend URLs (set by retry middleware)
+	excluded := middleware.ExcludedFromContext(req.Context())
+
 	// Select a backend server
-	target, err := h.router.Select(pri)
+	target, err := h.router.Select(pri, excluded)
 	if err != nil {
 		http.Error(w, "All backend servers unavailable: "+err.Error(), http.StatusBadGateway)
 		logging.Error(logging.AccessLog{
@@ -143,10 +146,7 @@ func (h *Handler) proxyToBackend(
 
 	if err != nil {
 		h.metrics.RecordEnd(target, latencyMs, false)
-		if breaker, ok := h.breakers[target]; ok {
-			breaker.RecordFailure()
-			h.metrics.SetCircuitState(target, breaker.State())
-		}
+		// Circuit breaker failure recording is now handled by the circuitbreaker middleware.
 
 		logging.Error(logging.AccessLog{
 			Message:   "Proxy request failed",
@@ -168,15 +168,6 @@ func (h *Handler) proxyToBackend(
 
 	isSuccess := resp.StatusCode < 500
 	h.metrics.RecordEnd(target, latencyMs, isSuccess)
-
-	if breaker, ok := h.breakers[target]; ok {
-		if isSuccess {
-			breaker.RecordSuccess()
-		} else {
-			breaker.RecordFailure()
-		}
-		h.metrics.SetCircuitState(target, breaker.State())
-	}
 	h.metrics.RecordPriority(target, pri)
 
 	// Write the response to the client

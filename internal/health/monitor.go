@@ -108,7 +108,9 @@ func (mon *Monitor) check(server config.ServerConfig) {
 	}
 
 	mon.metrics.SetHealth(server.URL, true)
-	mon.breakers[server.URL].RecordSuccess()
+	if mon.breakers[server.URL].RecordSuccess() {
+		mon.metrics.ClearLatencies(server.URL)
+	}
 	mon.metrics.SetCircuitState(server.URL, mon.breakers[server.URL].State())
 	log.Printf("[MONITOR] %-20s %-10s UP   ✓", server.Name, server.URL)
 }
