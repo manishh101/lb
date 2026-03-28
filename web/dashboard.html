@@ -31,8 +31,18 @@
       --radius: 16px;
       --radius-sm: 10px;
     }
+    :root[data-theme="light"] {
+      --bg: #f8fafc;
+      --bg-card: rgba(255,255,255,0.9);
+      --bg-card-hover: rgba(255,255,255,1);
+      --glass-border: rgba(0,0,0,0.1);
+      --glass-shadow: 0 8px 32px rgba(0,0,0,0.05);
+      --text: #1e293b;
+      --text-dim: #64748b;
+      --text-bright: #0f172a;
+    }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: var(--font); background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; min-height: 100vh; }
+    body { font-family: var(--font); background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; min-height: 100vh; transition: background 0.3s, color 0.3s; }
     body::before { content:''; position:fixed; top:-50%; left:-50%; width:200%; height:200%; background: radial-gradient(ellipse at 20% 50%, rgba(0,212,170,0.04) 0%, transparent 50%), radial-gradient(ellipse at 80% 20%, rgba(99,102,241,0.04) 0%, transparent 50%); pointer-events:none; z-index:0; }
 
     /* Navbar */
@@ -156,6 +166,7 @@
       <li><button data-target="backends">Backends</button></li>
     </ul>
     <div class="nav-right">
+      <button id="theme-toggle" class="pill" style="background:transparent; border:1px solid var(--glass-border); color:var(--text-dim); cursor:pointer; width:80px; justify-content:center;">🌞 LIGHT</button>
       <div id="connection-pill" class="pill offline">Offline</div>
       <div class="clock" id="clock">--:--:--</div>
     </div>
@@ -231,10 +242,10 @@
     </div>
 
     <!-- Fullscreen Views -->
-    <div id="view-routers" class="tab-content"><div class="section-title">Routers Explorer</div><div class="card fs-card"><table id="fs-table-routers"></table></div></div>
-    <div id="view-services" class="tab-content"><div class="section-title">Services Explorer</div><div class="card fs-card"><table id="fs-table-services"></table></div></div>
-    <div id="view-middlewares" class="tab-content"><div class="section-title">Middlewares Explorer</div><div class="card fs-card"><table id="fs-table-middlewares"></table></div></div>
-    <div id="view-backends" class="tab-content"><div class="section-title">Backends Explorer</div><div class="card fs-card"><table id="fs-table-servers"></table></div></div>
+    <div id="view-routers" class="tab-content"><div class="section-title">Routers Explorer</div><div class="card fs-card"><table id="fs-table-routers"><thead><tr><th>Name</th><th>Rule</th><th>Priority</th><th>Middlewares</th><th>Service</th><th>Status</th></tr></thead><tbody></tbody></table></div></div>
+    <div id="view-services" class="tab-content"><div class="section-title">Services Explorer</div><div class="card fs-card"><table id="fs-table-services"><thead><tr><th>Name</th><th>Servers</th><th>Algorithm</th><th>Status</th></tr></thead><tbody></tbody></table></div></div>
+    <div id="view-middlewares" class="tab-content"><div class="section-title">Middlewares Explorer</div><div class="card fs-card"><table id="fs-table-middlewares"><thead><tr><th>Name</th><th>Type</th><th>Config</th><th>Status</th></tr></thead><tbody></tbody></table></div></div>
+    <div id="view-backends" class="tab-content"><div class="section-title">Backends Explorer</div><div class="card fs-card"><table id="fs-table-servers"><thead><tr><th>Name</th><th>URL</th><th>Status</th><th>Circuit</th><th>Avg ms</th><th>P95 ms</th><th>Active</th><th>Total</th></tr></thead><tbody></tbody></table></div></div>
   </div>
 
 <script>
@@ -301,7 +312,7 @@ function initCharts(){
   const g = ctx.createLinearGradient(0,0,0,350);
   g.addColorStop(0,'rgba(0,212,170,0.2)'); g.addColorStop(1,'rgba(0,212,170,0)');
   charts.rps = new Chart(ctx, { type:'line', options:{ responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},
-    scales:{x:{display:false},y:{beginAtZero:true,grid:{color:'rgba(255,255,255,0.04)',borderDash:[4,4]},border:{display:false},ticks:{font:{family:"'JetBrains Mono'",size:11}}}},
+    scales:{x:{display:false},y:{beginAtZero:true,grid:{color:'rgba(128,128,128,0.1)',borderDash:[4,4]},border:{display:false},ticks:{font:{family:"'JetBrains Mono'",size:11}}}},
     plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(10,14,26,0.95)',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,padding:12,displayColors:false,bodyFont:{family:"'JetBrains Mono'",size:14}}},
     elements:{line:{tension:.35,borderWidth:2.5},point:{radius:0,hitRadius:10,hoverRadius:4}}
   }, data:{labels:[],datasets:[{label:'RPS',data:[],borderColor:C.ok,backgroundColor:g,fill:true,pointBackgroundColor:C.ok}]}});
@@ -346,7 +357,7 @@ function handleSnapshot(snap){
   document.getElementById('kpi-active').innerText=ac;
   updateDonut('servers',sS,sW,sE); updateDonut('circuits',cS,cW,cE); updateDonut('priority',hp,lp,0);
   popTable('table-servers',srvH);
-  popTable('fs-table-servers',`<thead><tr><th>Name</th><th>URL</th><th>Status</th><th>Circuit</th><th>Avg ms</th><th>P95 ms</th><th>Active</th><th>Total</th></tr></thead><tbody>${srvH}</tbody>`);
+  popTable('fs-table-servers',srvH);
 
   // Circuit Events
   let evH='';
@@ -360,7 +371,7 @@ function handleSnapshot(snap){
   let mH='';
   mwKeys.forEach(k=>{const m=mws[k]; mH+=`<tr><td><strong>${k}</strong></td><td class="mono">${m.type}</td><td class="mono">${summarizeMw(m)}</td><td><span class="badge badge-ok">ACTIVE</span></td></tr>`;});
   popTable('table-middlewares',mH);
-  popTable('fs-table-middlewares',`<thead><tr><th>Name</th><th>Type</th><th>Config</th><th>Status</th></tr></thead><tbody>${mH}</tbody>`);
+  popTable('fs-table-middlewares',mH);
 
   // Services
   const svcs = CONFIG.services||{};
@@ -376,7 +387,7 @@ function handleSnapshot(snap){
   }
   updateDonut('services',svS,svW,svE);
   popTable('table-services',svH);
-  popTable('fs-table-services',`<thead><tr><th>Name</th><th>Servers</th><th>Algorithm</th><th>Status</th></tr></thead><tbody>${svH}</tbody>`);
+  popTable('fs-table-services',svH);
 
   // Routers
   const rtrs = CONFIG.routers||{};
@@ -387,7 +398,7 @@ function handleSnapshot(snap){
   }
   updateDonut('routers',rS,0,0);
   popTable('table-routers',rH);
-  popTable('fs-table-routers',`<thead><tr><th>Name</th><th>Rule</th><th>Priority</th><th>Middlewares</th><th>Service</th><th>Status</th></tr></thead><tbody>${rH}</tbody>`);
+  popTable('fs-table-routers',rH);
 }
 
 function summarizeMw(m){
@@ -434,6 +445,25 @@ document.getElementById('mainTabs').addEventListener('click',e=>{
   document.getElementById('view-'+b.dataset.target).classList.add('active');
   window.scrollTo({top:0,behavior:'smooth'});
 });
+
+// ── Theme Toggle ──
+const thmBtn = document.getElementById('theme-toggle');
+thmBtn.addEventListener('click', () => {
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  if (isLight) {
+    document.documentElement.removeAttribute('data-theme');
+    thmBtn.innerText = '🌞 LIGHT';
+    localStorage.setItem('ilb-theme', 'dark');
+  } else {
+    document.documentElement.setAttribute('data-theme', 'light');
+    thmBtn.innerText = '🌙 DARK';
+    localStorage.setItem('ilb-theme', 'light');
+  }
+});
+if (localStorage.getItem('ilb-theme') === 'light') {
+  document.documentElement.setAttribute('data-theme', 'light');
+  thmBtn.innerText = '🌙 DARK';
+}
 
 window.onload=async()=>{
   await loadConfig();
