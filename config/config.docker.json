@@ -1,4 +1,75 @@
 {
+  "entrypoints": {
+    "web": {
+      "address": ":8082",
+      "protocol": "http",
+      "middlewares": ["headers", "access-log", "rate-limit", "timeout"]
+    },
+    "dashboard": {
+      "address": ":8081",
+      "protocol": "http",
+      "middlewares": ["basic-auth"]
+    }
+  },
+  "middlewares": {
+    "rate-limit": {
+      "type": "rateLimit",
+      "config": {
+        "requests_per_second": 100,
+        "burst": 50
+      }
+    },
+    "basic-auth": {
+      "type": "basicAuth",
+      "config": {
+        "username": "admin",
+        "password": "secret"
+      }
+    },
+    "retry": {
+      "type": "retry",
+      "config": {
+        "attempts": 3,
+        "initial_interval_ms": 100
+      }
+    },
+    "access-log": {
+      "type": "accessLog",
+      "config": {
+        "file_path": "/app/access.log"
+      }
+    },
+    "headers": {
+      "type": "headers",
+      "config": {}
+    },
+    "timeout": {
+      "type": "timeout",
+      "config": {
+        "high_sec": 5,
+        "medium_sec": 10,
+        "low_sec": 20
+      }
+    },
+    "circuit-breaker": {
+      "type": "circuitBreaker",
+      "config": {
+        "threshold": 3,
+        "recovery_timeout_sec": 15
+      }
+    },
+    "cors": {
+      "type": "cors",
+      "config": {
+        "allowed_origins": ["*"]
+      }
+    }
+  },
+  "timeouts": {
+    "high_sec": 5,
+    "medium_sec": 10,
+    "low_sec": 20
+  },
   "listen_port": 8080,
   "dashboard_port": 8081,
   "algorithm": "weighted",
@@ -20,56 +91,97 @@
     "password": "loadbalancer"
   },
   "tls": {
-    "enabled": false
+    "enabled": false,
+    "cert_file": "server.crt",
+    "key_file": "server.key",
+    "auto_generate": true
   },
-  "servers": [
-    {
-      "url": "http://alpha:8001",
-      "name": "Alpha",
-      "weight": 5,
-      "delay_ms": 15,
+  "cors": {
+    "allowed_origins": ["*"]
+  },
+  "routers": {
+    "payment-router": {
+      "rule": "PathPrefix('/api/payment') || PathPrefix('/api/checkout')",
+      "priority": 100,
+      "middlewares": ["rate-limit", "cors", "retry"],
+      "service": "fast-backends"
+    },
+    "admin-router": {
+      "rule": "PathPrefix('/admin') && Header('X-Admin-Key', 'secret')",
+      "priority": 90,
+      "middlewares": ["basic-auth"],
+      "service": "admin-backends"
+    },
+    "default-router": {
+      "rule": "PathPrefix('/')",
+      "priority": 1,
+      "middlewares": ["rate-limit", "retry"],
+      "service": "all-backends"
+    }
+  },
+  "services": {
+    "fast-backends": {
+      "canary": false,
       "health_check": {
         "path": "/health",
         "interval_sec": 5,
         "timeout_sec": 2,
         "expected_status": 200
-      }
+      },
+      "circuit_breaker": {
+        "threshold": 3,
+        "recovery_timeout_sec": 15
+      },
+      "servers": [
+        {
+          "url": "http://alpha:8001",
+          "name": "Alpha-Fast",
+          "weight": 5
+        }
+      ]
     },
-    {
-      "url": "http://beta:8002",
-      "name": "Beta",
-      "weight": 3,
-      "delay_ms": 50,
+    "admin-backends": {
       "health_check": {
         "path": "/health",
         "interval_sec": 10,
         "timeout_sec": 3,
         "expected_status": 200
-      }
+      },
+      "circuit_breaker": {
+        "threshold": 3,
+        "recovery_timeout_sec": 15
+      },
+      "servers": [
+        {
+          "url": "http://beta:8002",
+          "name": "Beta-Admin",
+          "weight": 3
+        }
+      ]
     },
-    {
-      "url": "http://gamma:8003",
-      "name": "Gamma",
-      "weight": 1,
-      "delay_ms": 100,
-      "health_check": {
-        "path": "/health",
-        "interval_sec": 15,
-        "timeout_sec": 2,
-        "expected_status": 200
-      }
-    },
-    {
-      "url": "http://delta:8004",
-      "name": "Delta",
-      "weight": 4,
-      "delay_ms": 20,
+    "all-backends": {
       "health_check": {
         "path": "/health",
         "interval_sec": 5,
         "timeout_sec": 2,
         "expected_status": 200
-      }
+      },
+      "circuit_breaker": {
+        "threshold": 3,
+        "recovery_timeout_sec": 15
+      },
+      "servers": [
+        {
+          "url": "http://gamma:8003",
+          "name": "Gamma-All",
+          "weight": 1
+        },
+        {
+          "url": "http://delta:8004",
+          "name": "Delta-All",
+          "weight": 4
+        }
+      ]
     }
-  ]
+  }
 }

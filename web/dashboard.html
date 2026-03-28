@@ -1,24 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Intelligent Load Balancer — Real-time monitoring dashboard with live metrics, circuit breaker status, and backend health.">
+  <meta name="description"
+    content="Intelligent Load Balancer — Real-time monitoring dashboard with live metrics, circuit breaker status, and backend health.">
   <title>ILB Dashboard — Intelligent Load Balancer</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
       --bg: #0a0e1a;
-      --bg-card: rgba(17,21,38,0.85);
-      --bg-card-hover: rgba(22,28,50,0.95);
-      --glass-border: rgba(255,255,255,0.06);
-      --glass-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      --bg-card: rgba(17, 21, 38, 0.85);
+      --bg-card-hover: rgba(22, 28, 50, 0.95);
+      --glass-border: rgba(255, 255, 255, 0.06);
+      --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
       --accent: #00d4aa;
-      --accent-glow: rgba(0,212,170,0.15);
+      --accent-glow: rgba(0, 212, 170, 0.15);
       --accent2: #6366f1;
       --accent3: #f59e0b;
       --danger: #ef4444;
@@ -31,132 +36,696 @@
       --radius: 16px;
       --radius-sm: 10px;
     }
+
     :root[data-theme="light"] {
       --bg: #f8fafc;
-      --bg-card: rgba(255,255,255,0.9);
-      --bg-card-hover: rgba(255,255,255,1);
-      --glass-border: rgba(0,0,0,0.1);
-      --glass-shadow: 0 8px 32px rgba(0,0,0,0.05);
+      --bg-card: rgba(255, 255, 255, 0.9);
+      --bg-card-hover: rgba(255, 255, 255, 1);
+      --glass-border: rgba(0, 0, 0, 0.1);
+      --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
       --text: #1e293b;
       --text-dim: #64748b;
       --text-bright: #0f172a;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: var(--font); background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; min-height: 100vh; transition: background 0.3s, color 0.3s; }
-    body::before { content:''; position:fixed; top:-50%; left:-50%; width:200%; height:200%; background: radial-gradient(ellipse at 20% 50%, rgba(0,212,170,0.04) 0%, transparent 50%), radial-gradient(ellipse at 80% 20%, rgba(99,102,241,0.04) 0%, transparent 50%); pointer-events:none; z-index:0; }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(ellipse at 20% 50%, rgba(0, 212, 170, 0.04) 0%, transparent 50%), radial-gradient(ellipse at 80% 20%, rgba(99, 102, 241, 0.04) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
 
     /* Navbar */
-    .navbar { background: rgba(10,14,26,0.95); backdrop-filter:blur(20px); border-bottom:1px solid var(--glass-border); display:flex; align-items:center; padding:0 32px; height:60px; position:sticky; top:0; z-index:100; }
-    .logo { font-size:18px; font-weight:800; display:flex; align-items:center; gap:10px; margin-right:40px; letter-spacing:-0.5px; }
-    .logo-icon { background:linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; font-family:var(--mono); font-size:20px; font-weight:700; }
-    .logo-ver { font-size:10px; background:rgba(255,255,255,0.06); padding:3px 8px; border-radius:6px; color:var(--text-dim); font-weight:600; letter-spacing:0.5px; -webkit-text-fill-color:initial; }
-    .nav-tabs { display:flex; list-style:none; height:100%; gap:4px; }
-    .nav-tabs button { background:transparent; border:none; color:var(--text-dim); font-family:var(--font); font-size:13px; font-weight:600; padding:0 18px; height:100%; cursor:pointer; border-bottom:2px solid transparent; transition:all .2s; }
-    .nav-tabs button:hover { color:var(--text); background:rgba(255,255,255,0.03); }
-    .nav-tabs button.active { color:var(--accent); border-bottom-color:var(--accent); }
-    .nav-right { margin-left:auto; display:flex; align-items:center; gap:16px; }
-    .pill { font-size:11px; padding:4px 12px; border-radius:20px; font-weight:600; display:flex; align-items:center; gap:6px; text-transform:uppercase; letter-spacing:0.5px; }
-    .pill::before { content:''; width:6px; height:6px; border-radius:50%; }
-    .pill.live { background:rgba(0,212,170,0.1); color:var(--accent); }
-    .pill.live::before { background:var(--accent); box-shadow:0 0 8px var(--accent); animation:pulse 2s infinite; }
-    .pill.offline { background:rgba(239,68,68,0.1); color:var(--danger); animation:blink 2s infinite; }
-    .pill.offline::before { background:var(--danger); }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.6} }
-    .clock { font-family:var(--mono); font-size:13px; color:var(--text-dim); font-weight:500; }
+    .navbar {
+      background: rgba(10, 14, 26, 0.95);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--glass-border);
+      display: flex;
+      align-items: center;
+      padding: 0 32px;
+      height: 60px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      font-size: 18px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-right: 40px;
+      letter-spacing: -0.5px;
+    }
+
+    .logo-icon {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-family: var(--mono);
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .logo-ver {
+      font-size: 10px;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 3px 8px;
+      border-radius: 6px;
+      color: var(--text-dim);
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      -webkit-text-fill-color: initial;
+    }
+
+    .nav-tabs {
+      display: flex;
+      list-style: none;
+      height: 100%;
+      gap: 4px;
+    }
+
+    .nav-tabs button {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 0 18px;
+      height: 100%;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all .2s;
+    }
+
+    .nav-tabs button:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .nav-tabs button.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    .nav-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .pill {
+      font-size: 11px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .pill::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .pill.live {
+      background: rgba(0, 212, 170, 0.1);
+      color: var(--accent);
+    }
+
+    .pill.live::before {
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+      animation: pulse 2s infinite;
+    }
+
+    .pill.offline {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
+      animation: blink 2s infinite;
+    }
+
+    .pill.offline::before {
+      background: var(--danger);
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .5
+      }
+    }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .6
+      }
+    }
+
+    .clock {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--text-dim);
+      font-weight: 500;
+    }
 
     /* Layout */
-    .container { max-width:1440px; margin:0 auto; padding:32px; position:relative; z-index:1; }
-    .section-title { font-size:14px; font-weight:700; color:var(--text-dim); margin-bottom:16px; text-transform:uppercase; letter-spacing:1.5px; display:flex; align-items:center; gap:10px; }
-    .section-title i { font-style:normal; font-size:16px; }
+    .container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 32px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-dim);
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-title i {
+      font-style: normal;
+      font-size: 16px;
+    }
 
     /* KPI Hero Cards */
-    .kpi-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:16px; margin-bottom:32px; }
-    .kpi-card { background:var(--bg-card); border:1px solid var(--glass-border); border-radius:var(--radius); padding:20px 24px; position:relative; overflow:hidden; transition:all .3s; }
-    .kpi-card:hover { transform:translateY(-2px); border-color:rgba(255,255,255,0.1); box-shadow:var(--glass-shadow); }
-    .kpi-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius:var(--radius) var(--radius) 0 0; }
-    .kpi-card:nth-child(1)::before { background:linear-gradient(90deg, var(--accent), #00b4d8); }
-    .kpi-card:nth-child(2)::before { background:linear-gradient(90deg, #22c55e, #86efac); }
-    .kpi-card:nth-child(3)::before { background:linear-gradient(90deg, var(--accent2), #818cf8); }
-    .kpi-card:nth-child(4)::before { background:linear-gradient(90deg, var(--accent3), #fbbf24); }
-    .kpi-card:nth-child(5)::before { background:linear-gradient(90deg, #ec4899, #f472b6); }
-    .kpi-label { font-size:11px; color:var(--text-dim); font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
-    .kpi-value { font-family:var(--mono); font-size:32px; font-weight:700; color:var(--text-bright); line-height:1; }
-    .kpi-sub { font-size:11px; color:var(--text-dim); margin-top:6px; font-weight:500; }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .kpi-card {
+      background: var(--bg-card);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      position: relative;
+      overflow: hidden;
+      transition: all .3s;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.1);
+      box-shadow: var(--glass-shadow);
+    }
+
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      border-radius: var(--radius) var(--radius) 0 0;
+    }
+
+    .kpi-card:nth-child(1)::before {
+      background: linear-gradient(90deg, var(--accent), #00b4d8);
+    }
+
+    .kpi-card:nth-child(2)::before {
+      background: linear-gradient(90deg, #22c55e, #86efac);
+    }
+
+    .kpi-card:nth-child(3)::before {
+      background: linear-gradient(90deg, var(--accent2), #818cf8);
+    }
+
+    .kpi-card:nth-child(4)::before {
+      background: linear-gradient(90deg, var(--accent3), #fbbf24);
+    }
+
+    .kpi-card:nth-child(5)::before {
+      background: linear-gradient(90deg, #ec4899, #f472b6);
+    }
+
+    .kpi-label {
+      font-size: 11px;
+      color: var(--text-dim);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .kpi-value {
+      font-family: var(--mono);
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--text-bright);
+      line-height: 1;
+    }
+
+    .kpi-sub {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 6px;
+      font-weight: 500;
+    }
 
     /* Cards */
-    .card { background:var(--bg-card); border:1px solid var(--glass-border); border-radius:var(--radius); padding:24px; backdrop-filter:blur(10px); transition:all .3s; }
-    .card:hover { border-color:rgba(255,255,255,0.1); box-shadow:var(--glass-shadow); }
-    .card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
-    .card-title { font-size:15px; font-weight:700; color:var(--text-bright); }
-    .grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:32px; }
-    .grid-2 { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-bottom:32px; }
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      padding: 24px;
+      backdrop-filter: blur(10px);
+      transition: all .3s;
+    }
+
+    .card:hover {
+      border-color: rgba(255, 255, 255, 0.1);
+      box-shadow: var(--glass-shadow);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-bright);
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
 
     /* Entrypoint Cards */
-    .ep-card { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:110px; }
-    .ep-label { font-size:11px; color:var(--text-dim); text-transform:uppercase; font-weight:700; letter-spacing:1.5px; margin-bottom:6px; }
-    .ep-port { font-family:var(--mono); font-size:36px; font-weight:700; color:var(--text-bright); }
-    .ep-proto { font-size:10px; background:rgba(0,212,170,0.1); color:var(--accent); padding:2px 8px; border-radius:4px; margin-top:6px; font-weight:600; }
+    .ep-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 110px;
+    }
+
+    .ep-label {
+      font-size: 11px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      margin-bottom: 6px;
+    }
+
+    .ep-port {
+      font-family: var(--mono);
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--text-bright);
+    }
+
+    .ep-proto {
+      font-size: 10px;
+      background: rgba(0, 212, 170, 0.1);
+      color: var(--accent);
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-top: 6px;
+      font-weight: 600;
+    }
 
     /* Explore / Inline Tables */
-    .explore-btn { color:var(--text-dim); font-size:12px; font-weight:600; cursor:pointer; background:rgba(255,255,255,0.04); border:1px solid var(--glass-border); padding:5px 12px; border-radius:8px; transition:all .2s; }
-    .explore-btn:hover { background:rgba(255,255,255,0.08); color:var(--text); }
-    .explore-btn.active { background:rgba(0,212,170,0.1); color:var(--accent); border-color:rgba(0,212,170,0.2); }
-    .explore-container { display:grid; grid-template-rows:0fr; transition:grid-template-rows .3s; }
-    .explore-container.open { grid-template-rows:1fr; margin-top:20px; padding-top:20px; border-top:1px solid var(--glass-border); }
-    .explore-inner { overflow:hidden; }
+    .explore-btn {
+      color: var(--text-dim);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--glass-border);
+      padding: 5px 12px;
+      border-radius: 8px;
+      transition: all .2s;
+    }
+
+    .explore-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+    }
+
+    .explore-btn.active {
+      background: rgba(0, 212, 170, 0.1);
+      color: var(--accent);
+      border-color: rgba(0, 212, 170, 0.2);
+    }
+
+    .explore-container {
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows .3s;
+    }
+
+    .explore-container.open {
+      grid-template-rows: 1fr;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--glass-border);
+    }
+
+    .explore-inner {
+      overflow: hidden;
+    }
 
     /* Donut Charts */
-    .card-body { display:flex; align-items:center; justify-content:space-between; }
-    .chart-box { width:120px; height:120px; position:relative; flex-shrink:0; }
-    .chart-center-text { position:absolute; top:0;left:0;right:0;bottom:0; display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:24px; font-weight:700; color:var(--text-bright); pointer-events:none; }
-    .legend { display:flex; flex-direction:column; gap:12px; flex:1; margin-left:24px; }
-    .legend-item { display:flex; align-items:center; gap:10px; }
-    .legend-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-    .legend-text { flex:1; display:flex; flex-direction:column; }
-    .legend-label { font-size:12px; font-weight:600; color:var(--text); }
-    .legend-pct { font-size:11px; color:var(--text-dim); }
-    .legend-val { font-family:var(--mono); font-size:16px; font-weight:700; color:var(--text-bright); }
+    .card-body {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .chart-box {
+      width: 120px;
+      height: 120px;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .chart-center-text {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--mono);
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text-bright);
+      pointer-events: none;
+    }
+
+    .legend {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1;
+      margin-left: 24px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .legend-text {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .legend-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .legend-pct {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .legend-val {
+      font-family: var(--mono);
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-bright);
+    }
 
     /* Feature Pills */
-    .features-grid { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:32px; }
-    .feature-pill { padding:8px 16px; border-radius:20px; font-size:11px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; display:flex; align-items:center; gap:6px; }
-    .feature-pill.on { background:rgba(0,212,170,0.08); color:var(--accent); border:1px solid rgba(0,212,170,0.15); }
-    .feature-pill.on::before { content:''; width:5px; height:5px; border-radius:50%; background:var(--accent); }
-    .feature-pill.off { background:rgba(239,68,68,0.08); color:var(--danger); border:1px solid rgba(239,68,68,0.15); }
+    .features-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 32px;
+    }
+
+    .feature-pill {
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .feature-pill.on {
+      background: rgba(0, 212, 170, 0.08);
+      color: var(--accent);
+      border: 1px solid rgba(0, 212, 170, 0.15);
+    }
+
+    .feature-pill.on::before {
+      content: '';
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .feature-pill.off {
+      background: rgba(239, 68, 68, 0.08);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.15);
+    }
 
     /* Tables */
-    table { width:100%; border-collapse:separate; border-spacing:0; }
-    th { padding:10px 14px; border-bottom:1px solid var(--glass-border); color:var(--text-dim); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; text-align:left; white-space:nowrap; }
-    td { padding:12px 14px; border-bottom:1px solid rgba(255,255,255,0.03); font-size:13px; color:var(--text); vertical-align:middle; }
-    tbody tr { transition:background .15s; }
-    tbody tr:hover { background:rgba(255,255,255,0.02); }
-    .mono { font-family:var(--mono); font-size:12px; }
-    .badge { display:inline-flex; align-items:center; padding:3px 10px; border-radius:6px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; }
-    .badge-ok { background:rgba(0,212,170,0.1); color:var(--accent); }
-    .badge-warn { background:rgba(245,158,11,0.1); color:var(--warning); }
-    .badge-err { background:rgba(239,68,68,0.1); color:var(--danger); }
-    .badge-dim { background:rgba(255,255,255,0.04); color:var(--text-dim); }
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    th {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--glass-border);
+      color: var(--text-dim);
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      font-size: 13px;
+      color: var(--text);
+      vertical-align: middle;
+    }
+
+    tbody tr {
+      transition: background .15s;
+    }
+
+    tbody tr:hover {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .mono {
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-ok {
+      background: rgba(0, 212, 170, 0.1);
+      color: var(--accent);
+    }
+
+    .badge-warn {
+      background: rgba(245, 158, 11, 0.1);
+      color: var(--warning);
+    }
+
+    .badge-err {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
+    }
+
+    .badge-dim {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-dim);
+    }
 
     /* RPS Chart */
-    .chart-card { padding:24px; height:350px; margin-bottom:32px; }
+    .chart-card {
+      padding: 24px;
+      height: 350px;
+      margin-bottom: 32px;
+    }
 
     /* Tab Views */
-    .tab-content { display:none; }
-    .tab-content.active { display:block; animation:fadeIn .3s; }
-    @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-    .fs-card { padding:24px; min-height:500px; margin-bottom:32px; }
-    .empty-state { padding:40px; text-align:center; color:var(--text-dim); font-style:italic; }
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeIn .3s;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    .fs-card {
+      padding: 24px;
+      min-height: 500px;
+      margin-bottom: 32px;
+    }
+
+    .empty-state {
+      padding: 40px;
+      text-align: center;
+      color: var(--text-dim);
+      font-style: italic;
+    }
 
     /* Responsive */
-    @media(max-width:1200px) { .kpi-grid{grid-template-columns:repeat(3,1fr)} .grid-3{grid-template-columns:repeat(2,1fr)} }
-    @media(max-width:768px) { .kpi-grid,.grid-3,.grid-2{grid-template-columns:1fr} .navbar{flex-wrap:wrap;height:auto;padding:12px 16px;gap:12px} .nav-tabs{width:100%;overflow-x:auto} .nav-right{width:100%;justify-content:space-between} .container{padding:16px} }
+    @media(max-width:1200px) {
+      .kpi-grid {
+        grid-template-columns: repeat(3, 1fr)
+      }
+
+      .grid-3 {
+        grid-template-columns: repeat(2, 1fr)
+      }
+    }
+
+    @media(max-width:768px) {
+
+      .kpi-grid,
+      .grid-3,
+      .grid-2 {
+        grid-template-columns: 1fr
+      }
+
+      .navbar {
+        flex-wrap: wrap;
+        height: auto;
+        padding: 12px 16px;
+        gap: 12px
+      }
+
+      .nav-tabs {
+        width: 100%;
+        overflow-x: auto
+      }
+
+      .nav-right {
+        width: 100%;
+        justify-content: space-between
+      }
+
+      .container {
+        padding: 16px
+      }
+    }
   </style>
 </head>
+
 <body>
   <nav class="navbar">
     <div class="logo">
-      <span class="logo-icon">⚡ ILB</span> <span style="color:var(--text-bright)">Dashboard</span> <span class="logo-ver">v2.0</span>
+      <span class="logo-icon">⚡ ILB</span> <span style="color:var(--text-bright)">Dashboard</span> <span
+        class="logo-ver">v2.0</span>
     </div>
     <ul class="nav-tabs" id="mainTabs">
       <li><button class="active" data-target="dashboard">Dashboard</button></li>
@@ -166,7 +735,9 @@
       <li><button data-target="backends">Backends</button></li>
     </ul>
     <div class="nav-right">
-      <button id="theme-toggle" class="pill" style="background:transparent; border:1px solid var(--glass-border); color:var(--text-dim); cursor:pointer; width:80px; justify-content:center;">🌞 LIGHT</button>
+      <button id="theme-toggle" class="pill"
+        style="background:transparent; border:1px solid var(--glass-border); color:var(--text-dim); cursor:pointer; width:80px; justify-content:center;">
+        LIGHT</button>
       <div id="connection-pill" class="pill offline">Offline</div>
       <div class="clock" id="clock">--:--:--</div>
     </div>
@@ -177,13 +748,33 @@
     <div id="view-dashboard" class="tab-content active">
 
       <!-- KPI Hero -->
-      <div class="section-title"><i>📊</i> Overview</div>
+      <div class="section-title"><i></i> Overview</div>
       <div class="kpi-grid">
-        <div class="kpi-card"><div class="kpi-label">Total Requests</div><div class="kpi-value" id="kpi-total">0</div><div class="kpi-sub">cumulative</div></div>
-        <div class="kpi-card"><div class="kpi-label">Success Rate</div><div class="kpi-value" id="kpi-success">0.0<span style="font-size:16px">%</span></div><div class="kpi-sub">2xx + 3xx responses</div></div>
-        <div class="kpi-card"><div class="kpi-label">Global RPS</div><div class="kpi-value" id="kpi-rps">0.0</div><div class="kpi-sub">requests/second</div></div>
-        <div class="kpi-card"><div class="kpi-label">Healthy Servers</div><div class="kpi-value" id="kpi-healthy">0/0</div><div class="kpi-sub">passing health checks</div></div>
-        <div class="kpi-card"><div class="kpi-label">Active Connections</div><div class="kpi-value" id="kpi-active">0</div><div class="kpi-sub">in-flight requests</div></div>
+        <div class="kpi-card">
+          <div class="kpi-label">Total Requests</div>
+          <div class="kpi-value" id="kpi-total">0</div>
+          <div class="kpi-sub">cumulative</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Success Rate</div>
+          <div class="kpi-value" id="kpi-success">0.0<span style="font-size:16px">%</span></div>
+          <div class="kpi-sub">2xx + 3xx responses</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Global RPS</div>
+          <div class="kpi-value" id="kpi-rps">0.0</div>
+          <div class="kpi-sub">requests/second</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Healthy Servers</div>
+          <div class="kpi-value" id="kpi-healthy">0/0</div>
+          <div class="kpi-sub">passing health checks</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Active Connections</div>
+          <div class="kpi-value" id="kpi-active">0</div>
+          <div class="kpi-sub">in-flight requests</div>
+        </div>
       </div>
 
       <!-- Entrypoints -->
@@ -191,286 +782,465 @@
       <div class="grid-3" id="entrypoints-container"></div>
 
       <!-- HTTP Overview -->
-      <div class="section-title"><i>🌐</i> HTTP</div>
+      <div class="section-title"><i></i> HTTP</div>
       <div class="grid-3">
         <!-- Routers Donut -->
         <div class="card">
-          <div class="card-header"><span class="card-title">Routers</span><button class="explore-btn" onclick="toggleExplore(this)">Explore ↓</button></div>
-          <div class="card-body"><div class="chart-box"><canvas id="donut-routers"></canvas><div class="chart-center-text" id="center-routers">0</div></div><div class="legend" id="legend-routers"></div></div>
-          <div class="explore-container"><div class="explore-inner"><table id="table-routers"><thead><tr><th>Name</th><th>Rule</th><th>Priority</th><th>Middlewares</th><th>Service</th><th>Status</th></tr></thead><tbody></tbody></table></div></div>
+          <div class="card-header"><span class="card-title">Routers</span><button class="explore-btn"
+              onclick="toggleExplore(this)">Explore ↓</button></div>
+          <div class="card-body">
+            <div class="chart-box"><canvas id="donut-routers"></canvas>
+              <div class="chart-center-text" id="center-routers">0</div>
+            </div>
+            <div class="legend" id="legend-routers"></div>
+          </div>
+          <div class="explore-container">
+            <div class="explore-inner">
+              <table id="table-routers">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Rule</th>
+                    <th>Priority</th>
+                    <th>Middlewares</th>
+                    <th>Service</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
         </div>
         <!-- Services Donut -->
         <div class="card">
-          <div class="card-header"><span class="card-title">Services</span><button class="explore-btn" onclick="toggleExplore(this)">Explore ↓</button></div>
-          <div class="card-body"><div class="chart-box"><canvas id="donut-services"></canvas><div class="chart-center-text" id="center-services">0</div></div><div class="legend" id="legend-services"></div></div>
-          <div class="explore-container"><div class="explore-inner"><table id="table-services"><thead><tr><th>Name</th><th>Servers</th><th>Algorithm</th><th>Status</th></tr></thead><tbody></tbody></table></div></div>
+          <div class="card-header"><span class="card-title">Services</span><button class="explore-btn"
+              onclick="toggleExplore(this)">Explore ↓</button></div>
+          <div class="card-body">
+            <div class="chart-box"><canvas id="donut-services"></canvas>
+              <div class="chart-center-text" id="center-services">0</div>
+            </div>
+            <div class="legend" id="legend-services"></div>
+          </div>
+          <div class="explore-container">
+            <div class="explore-inner">
+              <table id="table-services">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Servers</th>
+                    <th>Algorithm</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
         </div>
         <!-- Middlewares Donut -->
         <div class="card">
-          <div class="card-header"><span class="card-title">Middlewares</span><button class="explore-btn" onclick="toggleExplore(this)">Explore ↓</button></div>
-          <div class="card-body"><div class="chart-box"><canvas id="donut-middlewares"></canvas><div class="chart-center-text" id="center-middlewares">0</div></div><div class="legend" id="legend-middlewares"></div></div>
-          <div class="explore-container"><div class="explore-inner"><table id="table-middlewares"><thead><tr><th>Name</th><th>Type</th><th>Config</th><th>Status</th></tr></thead><tbody></tbody></table></div></div>
+          <div class="card-header"><span class="card-title">Middlewares</span><button class="explore-btn"
+              onclick="toggleExplore(this)">Explore ↓</button></div>
+          <div class="card-body">
+            <div class="chart-box"><canvas id="donut-middlewares"></canvas>
+              <div class="chart-center-text" id="center-middlewares">0</div>
+            </div>
+            <div class="legend" id="legend-middlewares"></div>
+          </div>
+          <div class="explore-container">
+            <div class="explore-inner">
+              <table id="table-middlewares">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Config</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- Backends -->
-      <div class="section-title"><i>📦</i> Backends</div>
+      <div class="section-title"><i></i> Backends</div>
       <div class="grid-3">
         <div class="card">
-          <div class="card-header"><span class="card-title">Servers</span><button class="explore-btn" onclick="toggleExplore(this)">Explore ↓</button></div>
-          <div class="card-body"><div class="chart-box"><canvas id="donut-servers"></canvas><div class="chart-center-text" id="center-servers">0</div></div><div class="legend" id="legend-servers"></div></div>
-          <div class="explore-container"><div class="explore-inner"><table id="table-servers"><thead><tr><th>Name</th><th>URL</th><th>Status</th><th>Circuit</th><th>Avg ms</th><th>P95 ms</th><th>Active</th><th>Total</th></tr></thead><tbody></tbody></table></div></div>
+          <div class="card-header"><span class="card-title">Servers</span><button class="explore-btn"
+              onclick="toggleExplore(this)">Explore ↓</button></div>
+          <div class="card-body">
+            <div class="chart-box"><canvas id="donut-servers"></canvas>
+              <div class="chart-center-text" id="center-servers">0</div>
+            </div>
+            <div class="legend" id="legend-servers"></div>
+          </div>
+          <div class="explore-container">
+            <div class="explore-inner">
+              <table id="table-servers">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>URL</th>
+                    <th>Status</th>
+                    <th>Circuit</th>
+                    <th>Avg ms</th>
+                    <th>P95 ms</th>
+                    <th>Active</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
         </div>
         <div class="card">
-          <div class="card-header"><span class="card-title">Circuit Breakers</span><button class="explore-btn" onclick="toggleExplore(this)">Explore ↓</button></div>
-          <div class="card-body"><div class="chart-box"><canvas id="donut-circuits"></canvas><div class="chart-center-text" id="center-circuits">0</div></div><div class="legend" id="legend-circuits"></div></div>
-          <div class="explore-container"><div class="explore-inner"><table id="table-circuits"><thead><tr><th>Time</th><th>Server</th><th>Transition</th></tr></thead><tbody></tbody></table></div></div>
+          <div class="card-header"><span class="card-title">Circuit Breakers</span><button class="explore-btn"
+              onclick="toggleExplore(this)">Explore ↓</button></div>
+          <div class="card-body">
+            <div class="chart-box"><canvas id="donut-circuits"></canvas>
+              <div class="chart-center-text" id="center-circuits">0</div>
+            </div>
+            <div class="legend" id="legend-circuits"></div>
+          </div>
+          <div class="explore-container">
+            <div class="explore-inner">
+              <table id="table-circuits">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Server</th>
+                    <th>Transition</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
         </div>
         <div class="card">
           <div class="card-header"><span class="card-title">Priority Traffic</span></div>
-          <div class="card-body"><div class="chart-box"><canvas id="donut-priority"></canvas></div><div class="legend" id="legend-priority"></div></div>
+          <div class="card-body">
+            <div class="chart-box"><canvas id="donut-priority"></canvas></div>
+            <div class="legend" id="legend-priority"></div>
+          </div>
         </div>
       </div>
 
       <!-- Features -->
-      <div class="section-title"><i>⚙</i> Active Features</div>
+      <div class="section-title"><i></i> Active Features</div>
       <div class="features-grid" id="features-container"></div>
 
       <!-- RPS Chart -->
-      <div class="section-title"><i>📈</i> Throughput</div>
+      <div class="section-title"><i></i> Throughput</div>
       <div class="card chart-card"><canvas id="rps-line-chart"></canvas></div>
     </div>
 
     <!-- Fullscreen Views -->
-    <div id="view-routers" class="tab-content"><div class="section-title">Routers Explorer</div><div class="card fs-card"><table id="fs-table-routers"><thead><tr><th>Name</th><th>Rule</th><th>Priority</th><th>Middlewares</th><th>Service</th><th>Status</th></tr></thead><tbody></tbody></table></div></div>
-    <div id="view-services" class="tab-content"><div class="section-title">Services Explorer</div><div class="card fs-card"><table id="fs-table-services"><thead><tr><th>Name</th><th>Servers</th><th>Algorithm</th><th>Status</th></tr></thead><tbody></tbody></table></div></div>
-    <div id="view-middlewares" class="tab-content"><div class="section-title">Middlewares Explorer</div><div class="card fs-card"><table id="fs-table-middlewares"><thead><tr><th>Name</th><th>Type</th><th>Config</th><th>Status</th></tr></thead><tbody></tbody></table></div></div>
-    <div id="view-backends" class="tab-content"><div class="section-title">Backends Explorer</div><div class="card fs-card"><table id="fs-table-servers"><thead><tr><th>Name</th><th>URL</th><th>Status</th><th>Circuit</th><th>Avg ms</th><th>P95 ms</th><th>Active</th><th>Total</th></tr></thead><tbody></tbody></table></div></div>
+    <div id="view-routers" class="tab-content">
+      <div class="section-title">Routers Explorer</div>
+      <div class="card fs-card">
+        <table id="fs-table-routers">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Rule</th>
+              <th>Priority</th>
+              <th>Middlewares</th>
+              <th>Service</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="view-services" class="tab-content">
+      <div class="section-title">Services Explorer</div>
+      <div class="card fs-card">
+        <table id="fs-table-services">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Servers</th>
+              <th>Algorithm</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="view-middlewares" class="tab-content">
+      <div class="section-title">Middlewares Explorer</div>
+      <div class="card fs-card">
+        <table id="fs-table-middlewares">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Config</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="view-backends" class="tab-content">
+      <div class="section-title">Backends Explorer</div>
+      <div class="card fs-card">
+        <table id="fs-table-servers">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>URL</th>
+              <th>Status</th>
+              <th>Circuit</th>
+              <th>Avg ms</th>
+              <th>P95 ms</th>
+              <th>Active</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
-<script>
-// ── Dynamic Config (loaded from /api/config) ──
-let CONFIG = { entrypoints:{}, routers:{}, services:{}, middlewares:{}, features:[] };
-const C = { ok:'#00d4aa', warn:'#f59e0b', err:'#ef4444', p1:'#6366f1', p2:'#a78bfa' };
-let charts = {}, rpsHistory = [];
+  <script>
+    // ── Dynamic Config (loaded from /api/config) ──
+    let CONFIG = { entrypoints: {}, routers: {}, services: {}, middlewares: {}, features: [] };
+    const C = { ok: '#00d4aa', warn: '#f59e0b', err: '#ef4444', p1: '#6366f1', p2: '#a78bfa' };
+    let charts = {}, rpsHistory = [];
 
-// ── Clock ──
-setInterval(()=>{ document.getElementById('clock').innerText = new Date().toLocaleTimeString([],{hour12:false}); },1000);
+    // ── Clock ──
+    setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString([], { hour12: false }); }, 1000);
 
-// ── Load config dynamically from /api/config ──
-async function loadConfig(){
-  try {
-    const r = await fetch('/api/config'); if(!r.ok) return;
-    const cfg = await r.json();
-    CONFIG.entrypoints = cfg.entrypoints || {};
-    CONFIG.routers = cfg.routers || {};
-    CONFIG.services = cfg.services || {};
-    CONFIG.middlewares = cfg.middlewares || {};
-    CONFIG.hotReload = cfg.hot_reload || false;
-    CONFIG.algorithm = cfg.algorithm || 'weighted';
-    renderStatic();
-  } catch(e){ console.warn('Config fetch failed, using defaults', e); }
-}
+    // ── Load config dynamically from /api/config ──
+    async function loadConfig() {
+      try {
+        const r = await fetch('/api/config'); if (!r.ok) return;
+        const cfg = await r.json();
+        CONFIG.entrypoints = cfg.entrypoints || {};
+        CONFIG.routers = cfg.routers || {};
+        CONFIG.services = cfg.services || {};
+        CONFIG.middlewares = cfg.middlewares || {};
+        CONFIG.hotReload = cfg.hot_reload || false;
+        CONFIG.algorithm = cfg.algorithm || 'weighted';
+        renderStatic();
+      } catch (e) { console.warn('Config fetch failed, using defaults', e); }
+    }
 
-function renderStatic(){
-  // Entrypoints
-  const epC = document.getElementById('entrypoints-container');
-  let epH = '';
-  for(const[name,ep] of Object.entries(CONFIG.entrypoints)){
-    epH += `<div class="card ep-card"><div class="ep-label">${name}</div><div class="ep-port">${ep.address||':?'}</div><div class="ep-proto">${(ep.protocol||'http').toUpperCase()}</div></div>`;
-  }
-  epC.innerHTML = epH || '<div class="card ep-card"><div class="ep-label">web</div><div class="ep-port">:8080</div><div class="ep-proto">HTTP</div></div>';
+    function renderStatic() {
+      // Entrypoints
+      const epC = document.getElementById('entrypoints-container');
+      let epH = '';
+      for (const [name, ep] of Object.entries(CONFIG.entrypoints)) {
+        epH += `<div class="card ep-card"><div class="ep-label">${name}</div><div class="ep-port">${ep.address || ':?'}</div><div class="ep-proto">${(ep.protocol || 'http').toUpperCase()}</div></div>`;
+      }
+      epC.innerHTML = epH || '<div class="card ep-card"><div class="ep-label">web</div><div class="ep-port">:8080</div><div class="ep-proto">HTTP</div></div>';
 
-  // Features
-  const fc = document.getElementById('features-container');
-  const feats = [];
-  if(CONFIG.middlewares['rate-limit']) feats.push('Rate Limiting');
-  if(CONFIG.middlewares['access-log']) feats.push('Access Log');
-  if(CONFIG.middlewares['retry']) feats.push('Retry');
-  if(CONFIG.middlewares['circuit-breaker']) feats.push('Circuit Breaker');
-  if(CONFIG.middlewares['basic-auth']) feats.push('Basic Auth');
-  if(CONFIG.middlewares['cors']) feats.push('CORS');
-  if(CONFIG.middlewares['timeout']) feats.push('Timeout');
-  if(CONFIG.middlewares['headers']) feats.push('Headers');
-  if(CONFIG.hotReload) feats.push('Hot Reload');
-  fc.innerHTML = feats.map(f=>`<div class="feature-pill on">${f}</div>`).join('') || '<div class="feature-pill on">Load Balancing</div>';
-}
+      // Features
+      const fc = document.getElementById('features-container');
+      const feats = [];
+      if (CONFIG.middlewares['rate-limit']) feats.push('Rate Limiting');
+      if (CONFIG.middlewares['access-log']) feats.push('Access Log');
+      if (CONFIG.middlewares['retry']) feats.push('Retry');
+      if (CONFIG.middlewares['circuit-breaker']) feats.push('Circuit Breaker');
+      if (CONFIG.middlewares['basic-auth']) feats.push('Basic Auth');
+      if (CONFIG.middlewares['cors']) feats.push('CORS');
+      if (CONFIG.middlewares['timeout']) feats.push('Timeout');
+      if (CONFIG.middlewares['headers']) feats.push('Headers');
+      if (CONFIG.hotReload) feats.push('Hot Reload');
+      fc.innerHTML = feats.map(f => `<div class="feature-pill on">${f}</div>`).join('') || '<div class="feature-pill on">Load Balancing</div>';
+    }
 
-function initCharts(){
-  Chart.defaults.font.family = "'Inter', sans-serif";
-  Chart.defaults.color = '#64748b';
-  const donutOpts = { type:'doughnut', options:{ cutout:'78%',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(10,14,26,0.95)',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,padding:12,cornerRadius:10,titleFont:{family:"'Inter'"},bodyFont:{family:"'JetBrains Mono'",size:13}}},animation:{duration:0},elements:{arc:{borderWidth:0}} } };
+    function initCharts() {
+      Chart.defaults.font.family = "'Inter', sans-serif";
+      Chart.defaults.color = '#64748b';
+      const donutOpts = { type: 'doughnut', options: { cutout: '78%', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(10,14,26,0.95)', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, padding: 12, cornerRadius: 10, titleFont: { family: "'Inter'" }, bodyFont: { family: "'JetBrains Mono'", size: 13 } } }, animation: { duration: 0 }, elements: { arc: { borderWidth: 0 } } } };
 
-  charts.routers = new Chart(document.getElementById('donut-routers'), {...donutOpts, data:{labels:['Active','Warning','Error'],datasets:[{data:[0,0,0],backgroundColor:[C.ok,C.warn,C.err]}]}});
-  charts.services = new Chart(document.getElementById('donut-services'), {...donutOpts, data:{labels:['Healthy','Degraded','Failing'],datasets:[{data:[0,0,0],backgroundColor:[C.ok,C.warn,C.err]}]}});
-  charts.middlewares = new Chart(document.getElementById('donut-middlewares'), {...donutOpts, data:{labels:['Active','Warning','Error'],datasets:[{data:[0,0,0],backgroundColor:[C.ok,C.warn,C.err]}]}});
-  charts.servers = new Chart(document.getElementById('donut-servers'), {...donutOpts, data:{labels:['Healthy','Warning','Down'],datasets:[{data:[0,0,0],backgroundColor:[C.ok,C.warn,C.err]}]}});
-  charts.circuits = new Chart(document.getElementById('donut-circuits'), {...donutOpts, data:{labels:['Closed','Half-Open','Open'],datasets:[{data:[0,0,0],backgroundColor:[C.ok,C.warn,C.err]}]}});
-  charts.priority = new Chart(document.getElementById('donut-priority'), {...donutOpts, data:{labels:['High','Low'],datasets:[{data:[0,0],backgroundColor:[C.p1,C.p2]}]}});
+      charts.routers = new Chart(document.getElementById('donut-routers'), { ...donutOpts, data: { labels: ['Active', 'Warning', 'Error'], datasets: [{ data: [0, 0, 0], backgroundColor: [C.ok, C.warn, C.err] }] } });
+      charts.services = new Chart(document.getElementById('donut-services'), { ...donutOpts, data: { labels: ['Healthy', 'Degraded', 'Failing'], datasets: [{ data: [0, 0, 0], backgroundColor: [C.ok, C.warn, C.err] }] } });
+      charts.middlewares = new Chart(document.getElementById('donut-middlewares'), { ...donutOpts, data: { labels: ['Active', 'Warning', 'Error'], datasets: [{ data: [0, 0, 0], backgroundColor: [C.ok, C.warn, C.err] }] } });
+      charts.servers = new Chart(document.getElementById('donut-servers'), { ...donutOpts, data: { labels: ['Healthy', 'Warning', 'Down'], datasets: [{ data: [0, 0, 0], backgroundColor: [C.ok, C.warn, C.err] }] } });
+      charts.circuits = new Chart(document.getElementById('donut-circuits'), { ...donutOpts, data: { labels: ['Closed', 'Half-Open', 'Open'], datasets: [{ data: [0, 0, 0], backgroundColor: [C.ok, C.warn, C.err] }] } });
+      charts.priority = new Chart(document.getElementById('donut-priority'), { ...donutOpts, data: { labels: ['High', 'Low'], datasets: [{ data: [0, 0], backgroundColor: [C.p1, C.p2] }] } });
 
-  const ctx = document.getElementById('rps-line-chart').getContext('2d');
-  const g = ctx.createLinearGradient(0,0,0,350);
-  g.addColorStop(0,'rgba(0,212,170,0.2)'); g.addColorStop(1,'rgba(0,212,170,0)');
-  charts.rps = new Chart(ctx, { type:'line', options:{ responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},
-    scales:{x:{display:false},y:{beginAtZero:true,grid:{color:'rgba(128,128,128,0.1)',borderDash:[4,4]},border:{display:false},ticks:{font:{family:"'JetBrains Mono'",size:11}}}},
-    plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(10,14,26,0.95)',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,padding:12,displayColors:false,bodyFont:{family:"'JetBrains Mono'",size:14}}},
-    elements:{line:{tension:.35,borderWidth:2.5},point:{radius:0,hitRadius:10,hoverRadius:4}}
-  }, data:{labels:[],datasets:[{label:'RPS',data:[],borderColor:C.ok,backgroundColor:g,fill:true,pointBackgroundColor:C.ok}]}});
-}
+      const ctx = document.getElementById('rps-line-chart').getContext('2d');
+      const g = ctx.createLinearGradient(0, 0, 0, 350);
+      g.addColorStop(0, 'rgba(0,212,170,0.2)'); g.addColorStop(1, 'rgba(0,212,170,0)');
+      charts.rps = new Chart(ctx, {
+        type: 'line', options: {
+          responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false },
+          scales: { x: { display: false }, y: { beginAtZero: true, grid: { color: 'rgba(128,128,128,0.1)', borderDash: [4, 4] }, border: { display: false }, ticks: { font: { family: "'JetBrains Mono'", size: 11 } } } },
+          plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(10,14,26,0.95)', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, padding: 12, displayColors: false, bodyFont: { family: "'JetBrains Mono'", size: 14 } } },
+          elements: { line: { tension: .35, borderWidth: 2.5 }, point: { radius: 0, hitRadius: 10, hoverRadius: 4 } }
+        }, data: { labels: [], datasets: [{ label: 'RPS', data: [], borderColor: C.ok, backgroundColor: g, fill: true, pointBackgroundColor: C.ok }] }
+      });
+    }
 
-function updateDonut(name,s,w,e){
-  if(!charts[name]) return;
-  const isPri = name==='priority';
-  const t = isPri ? s+w : s+w+e;
-  if(t===0){ charts[name].data.datasets[0].data = isPri?[1,0]:[1,0,0]; charts[name].data.datasets[0].backgroundColor = ['rgba(255,255,255,0.05)','rgba(255,255,255,0.05)','rgba(255,255,255,0.05)'];
-  } else { charts[name].data.datasets[0].data = isPri?[s,w]:[s,w,e]; charts[name].data.datasets[0].backgroundColor = isPri?[C.p1,C.p2]:[C.ok,C.warn,C.err]; }
-  const ce=document.getElementById(`center-${name}`); if(ce&&!isPri) ce.innerText=t;
-  charts[name].update();
-  const el=document.getElementById(`legend-${name}`); if(!el) return;
-  if(isPri){
-    el.innerHTML=`<div class="legend-item"><div class="legend-dot" style="background:${C.p1}"></div><div class="legend-text"><span class="legend-label">High</span><span class="legend-pct">${t>0?Math.round(s/t*100):0}%</span></div><span class="legend-val">${s}</span></div>
-    <div class="legend-item"><div class="legend-dot" style="background:${C.p2}"></div><div class="legend-text"><span class="legend-label">Low</span><span class="legend-pct">${t>0?Math.round(w/t*100):0}%</span></div><span class="legend-val">${w}</span></div>`;
-  } else {
-    const labs=name==='circuits'?['Closed','Half-Open','Open']:['Healthy','Warning','Error'];
-    el.innerHTML=[0,1,2].map(i=>{const v=[s,w,e][i];const c=[C.ok,C.warn,C.err][i];return `<div class="legend-item"><div class="legend-dot" style="background:${c}"></div><div class="legend-text"><span class="legend-label">${labs[i]}</span><span class="legend-pct">${t>0?Math.round(v/t*100):0}%</span></div><span class="legend-val">${v}</span></div>`;}).join('');
-  }
-}
+    function updateDonut(name, s, w, e) {
+      if (!charts[name]) return;
+      const isPri = name === 'priority';
+      const t = isPri ? s + w : s + w + e;
+      if (t === 0) {
+        charts[name].data.datasets[0].data = isPri ? [1, 0] : [1, 0, 0]; charts[name].data.datasets[0].backgroundColor = ['rgba(255,255,255,0.05)', 'rgba(255,255,255,0.05)', 'rgba(255,255,255,0.05)'];
+      } else { charts[name].data.datasets[0].data = isPri ? [s, w] : [s, w, e]; charts[name].data.datasets[0].backgroundColor = isPri ? [C.p1, C.p2] : [C.ok, C.warn, C.err]; }
+      const ce = document.getElementById(`center-${name}`); if (ce && !isPri) ce.innerText = t;
+      charts[name].update();
+      const el = document.getElementById(`legend-${name}`); if (!el) return;
+      if (isPri) {
+        el.innerHTML = `<div class="legend-item"><div class="legend-dot" style="background:${C.p1}"></div><div class="legend-text"><span class="legend-label">High</span><span class="legend-pct">${t > 0 ? Math.round(s / t * 100) : 0}%</span></div><span class="legend-val">${s}</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:${C.p2}"></div><div class="legend-text"><span class="legend-label">Low</span><span class="legend-pct">${t > 0 ? Math.round(w / t * 100) : 0}%</span></div><span class="legend-val">${w}</span></div>`;
+      } else {
+        const labs = name === 'circuits' ? ['Closed', 'Half-Open', 'Open'] : ['Healthy', 'Warning', 'Error'];
+        el.innerHTML = [0, 1, 2].map(i => { const v = [s, w, e][i]; const c = [C.ok, C.warn, C.err][i]; return `<div class="legend-item"><div class="legend-dot" style="background:${c}"></div><div class="legend-text"><span class="legend-label">${labs[i]}</span><span class="legend-pct">${t > 0 ? Math.round(v / t * 100) : 0}%</span></div><span class="legend-val">${v}</span></div>`; }).join('');
+      }
+    }
 
-function handleSnapshot(snap){
-  if(!snap) return;
-  const sd = snap.servers||{}, servers = Object.values(sd);
-  document.getElementById('kpi-total').innerText = (snap.total_requests||0).toLocaleString();
-  document.getElementById('kpi-success').innerHTML = (snap.success_rate||0).toFixed(1)+'<span style="font-size:16px">%</span>';
-  document.getElementById('kpi-rps').innerText = (snap.global_rps||0).toFixed(1);
-  document.getElementById('kpi-healthy').innerText = `${snap.healthy_count||0}/${snap.total_count||0}`;
-  let ac=0,hp=0,lp=0,sS=0,sW=0,sE=0,cS=0,cW=0,cE=0,srvH='';
-  servers.forEach(s=>{
-    ac+=s.active_connections||0; hp+=s.high_priority_count||0; lp+=s.low_priority_count||0;
-    let sl='OK',sc='badge-ok';
-    if(!s.is_healthy||s.circuit_state==='OPEN'){sl='DOWN';sc='badge-err';sE++}
-    else if(s.circuit_state==='HALF_OPEN'){sl='WARN';sc='badge-warn';sW++}
-    else{sS++}
-    let cc='badge-ok';
-    if(s.circuit_state==='OPEN'){cc='badge-err';cE++}else if(s.circuit_state==='HALF_OPEN'){cc='badge-warn';cW++}else{cS++}
-    srvH+=`<tr><td><strong>${s.name}</strong></td><td class="mono">${s.url}</td><td><span class="badge ${sc}">${sl}</span></td><td><span class="badge ${cc}">${s.circuit_state}</span></td><td class="mono">${(s.avg_latency_ms||0).toFixed(1)}</td><td class="mono">${(s.p95_latency_ms||0).toFixed(1)}</td><td class="mono">${s.active_connections||0}</td><td class="mono">${s.total_requests||0}</td></tr>`;
-  });
-  document.getElementById('kpi-active').innerText=ac;
-  updateDonut('servers',sS,sW,sE); updateDonut('circuits',cS,cW,cE); updateDonut('priority',hp,lp,0);
-  popTable('table-servers',srvH);
-  popTable('fs-table-servers',srvH);
+    function handleSnapshot(snap) {
+      if (!snap) return;
+      const sd = snap.servers || {}, servers = Object.values(sd);
+      document.getElementById('kpi-total').innerText = (snap.total_requests || 0).toLocaleString();
+      document.getElementById('kpi-success').innerHTML = (snap.success_rate || 0).toFixed(1) + '<span style="font-size:16px">%</span>';
+      document.getElementById('kpi-rps').innerText = (snap.global_rps || 0).toFixed(1);
+      document.getElementById('kpi-healthy').innerText = `${snap.healthy_count || 0}/${snap.total_count || 0}`;
+      let ac = 0, hp = 0, lp = 0, sS = 0, sW = 0, sE = 0, cS = 0, cW = 0, cE = 0, srvH = '';
+      servers.forEach(s => {
+        ac += s.active_connections || 0; hp += s.high_priority_count || 0; lp += s.low_priority_count || 0;
+        let sl = 'OK', sc = 'badge-ok';
+        if (!s.is_healthy || s.circuit_state === 'OPEN') { sl = 'DOWN'; sc = 'badge-err'; sE++ }
+        else if (s.circuit_state === 'HALF_OPEN') { sl = 'WARN'; sc = 'badge-warn'; sW++ }
+        else { sS++ }
+        let cc = 'badge-ok';
+        if (s.circuit_state === 'OPEN') { cc = 'badge-err'; cE++ } else if (s.circuit_state === 'HALF_OPEN') { cc = 'badge-warn'; cW++ } else { cS++ }
+        srvH += `<tr><td><strong>${s.name}</strong></td><td class="mono">${s.url}</td><td><span class="badge ${sc}">${sl}</span></td><td><span class="badge ${cc}">${s.circuit_state}</span></td><td class="mono">${(s.avg_latency_ms || 0).toFixed(1)}</td><td class="mono">${(s.p95_latency_ms || 0).toFixed(1)}</td><td class="mono">${s.active_connections || 0}</td><td class="mono">${s.total_requests || 0}</td></tr>`;
+      });
+      document.getElementById('kpi-active').innerText = ac;
+      updateDonut('servers', sS, sW, sE); updateDonut('circuits', cS, cW, cE); updateDonut('priority', hp, lp, 0);
+      popTable('table-servers', srvH);
+      popTable('fs-table-servers', srvH);
 
-  // Circuit Events
-  let evH='';
-  (snap.circuit_events||[]).slice(0,20).forEach(e=>{evH+=`<tr><td class="mono">${e.timestamp}</td><td><strong>${e.server_name}</strong></td><td><span class="badge badge-dim">${e.old_state}</span> → <span class="badge ${e.new_state==='OPEN'?'badge-err':'badge-ok'}">${e.new_state}</span></td></tr>`;});
-  popTable('table-circuits',evH);
+      // Circuit Events
+      let evH = '';
+      (snap.circuit_events || []).slice(0, 20).forEach(e => { evH += `<tr><td class="mono">${e.timestamp}</td><td><strong>${e.server_name}</strong></td><td><span class="badge badge-dim">${e.old_state}</span> → <span class="badge ${e.new_state === 'OPEN' ? 'badge-err' : 'badge-ok'}">${e.new_state}</span></td></tr>`; });
+      popTable('table-circuits', evH);
 
-  // Middlewares
-  const mws = CONFIG.middlewares||{};
-  const mwKeys = Object.keys(mws);
-  updateDonut('middlewares',mwKeys.length,0,0);
-  let mH='';
-  mwKeys.forEach(k=>{const m=mws[k]; mH+=`<tr><td><strong>${k}</strong></td><td class="mono">${m.type}</td><td class="mono">${summarizeMw(m)}</td><td><span class="badge badge-ok">ACTIVE</span></td></tr>`;});
-  popTable('table-middlewares',mH);
-  popTable('fs-table-middlewares',mH);
+      // Middlewares
+      const mws = CONFIG.middlewares || {};
+      const mwKeys = Object.keys(mws);
+      updateDonut('middlewares', mwKeys.length, 0, 0);
+      let mH = '';
+      mwKeys.forEach(k => { const m = mws[k]; mH += `<tr><td><strong>${k}</strong></td><td class="mono">${m.type}</td><td class="mono">${summarizeMw(m)}</td><td><span class="badge badge-ok">ACTIVE</span></td></tr>`; });
+      popTable('table-middlewares', mH);
+      popTable('fs-table-middlewares', mH);
 
-  // Services
-  const svcs = CONFIG.services||{};
-  let svS=0,svW=0,svE=0,svH='';
-  for(const[name,svc] of Object.entries(svcs)){
-    const srvNames=(svc.servers||[]).map(s=>s.name);
-    const assoc=servers.filter(s=>srvNames.includes(s.name));
-    const tot=assoc.length, hlth=assoc.filter(s=>s.is_healthy).length;
-    let sc='badge-ok',sl='HEALTHY';
-    if(tot===0){sc='badge-dim';sl='IDLE';svE++}else if(hlth===0){sc='badge-err';sl='FAILING';svE++}else if(hlth<tot){sc='badge-warn';sl='DEGRADED';svW++}else{svS++}
-    const algo=svc.canary?'canary':(svc.load_balancer?.algorithm||CONFIG.algorithm||'weighted');
-    svH+=`<tr><td><strong>${name}</strong></td><td class="mono">${srvNames.join(', ')}</td><td class="mono">${algo}</td><td><span class="badge ${sc}">${sl}</span></td></tr>`;
-  }
-  updateDonut('services',svS,svW,svE);
-  popTable('table-services',svH);
-  popTable('fs-table-services',svH);
+      // Services
+      const svcs = CONFIG.services || {};
+      let svS = 0, svW = 0, svE = 0, svH = '';
+      for (const [name, svc] of Object.entries(svcs)) {
+        const srvNames = (svc.servers || []).map(s => s.name);
+        const assoc = servers.filter(s => srvNames.includes(s.name));
+        const tot = assoc.length, hlth = assoc.filter(s => s.is_healthy).length;
+        let sc = 'badge-ok', sl = 'HEALTHY';
+        if (tot === 0) { sc = 'badge-dim'; sl = 'IDLE'; svE++ } else if (hlth === 0) { sc = 'badge-err'; sl = 'FAILING'; svE++ } else if (hlth < tot) { sc = 'badge-warn'; sl = 'DEGRADED'; svW++ } else { svS++ }
+        const algo = svc.canary ? 'canary' : (svc.load_balancer?.algorithm || CONFIG.algorithm || 'weighted');
+        svH += `<tr><td><strong>${name}</strong></td><td class="mono">${srvNames.join(', ')}</td><td class="mono">${algo}</td><td><span class="badge ${sc}">${sl}</span></td></tr>`;
+      }
+      updateDonut('services', svS, svW, svE);
+      popTable('table-services', svH);
+      popTable('fs-table-services', svH);
 
-  // Routers
-  const rtrs = CONFIG.routers||{};
-  let rS=0,rH='';
-  for(const[name,r] of Object.entries(rtrs)){
-    rS++;
-    rH+=`<tr><td><strong>${name}</strong></td><td class="mono">${r.rule}</td><td class="mono">${r.priority}</td><td class="mono">${(r.middlewares||[]).join(', ')}</td><td class="mono">${r.service}</td><td><span class="badge badge-ok">ACTIVE</span></td></tr>`;
-  }
-  updateDonut('routers',rS,0,0);
-  popTable('table-routers',rH);
-  popTable('fs-table-routers',rH);
-}
+      // Routers
+      const rtrs = CONFIG.routers || {};
+      let rS = 0, rH = '';
+      for (const [name, r] of Object.entries(rtrs)) {
+        rS++;
+        rH += `<tr><td><strong>${name}</strong></td><td class="mono">${r.rule}</td><td class="mono">${r.priority}</td><td class="mono">${(r.middlewares || []).join(', ')}</td><td class="mono">${r.service}</td><td><span class="badge badge-ok">ACTIVE</span></td></tr>`;
+      }
+      updateDonut('routers', rS, 0, 0);
+      popTable('table-routers', rH);
+      popTable('fs-table-routers', rH);
+    }
 
-function summarizeMw(m){
-  try{const c=JSON.parse(m.config||'{}');const parts=Object.entries(c).map(([k,v])=>`${k}:${JSON.stringify(v)}`);return parts.join(', ').substring(0,60);}catch(e){return '—';}
-}
+    function summarizeMw(m) {
+      try { const c = JSON.parse(m.config || '{}'); const parts = Object.entries(c).map(([k, v]) => `${k}:${JSON.stringify(v)}`); return parts.join(', ').substring(0, 60); } catch (e) { return '—'; }
+    }
 
-function popTable(id,html){
-  const el=document.getElementById(id); if(!el) return;
-  const t=el.querySelector('tbody')||el;
-  t.innerHTML=(!html||!html.trim())?'<tr><td colspan="10"><div class="empty-state">No data available</div></td></tr>':html;
-}
+    function popTable(id, html) {
+      const el = document.getElementById(id); if (!el) return;
+      const t = el.querySelector('tbody') || el;
+      t.innerHTML = (!html || !html.trim()) ? '<tr><td colspan="10"><div class="empty-state">No data available</div></td></tr>' : html;
+    }
 
-function handleHistory(arr){
-  rpsHistory=arr.map(s=>s.global_rps||0);
-  if(charts.rps){charts.rps.data.labels=rpsHistory.map(()=>'');charts.rps.data.datasets[0].data=rpsHistory;charts.rps.update();}
-  if(arr.length>0) handleSnapshot(arr[arr.length-1]);
-}
+    function handleHistory(arr) {
+      rpsHistory = arr.map(s => s.global_rps || 0);
+      if (charts.rps) { charts.rps.data.labels = rpsHistory.map(() => ''); charts.rps.data.datasets[0].data = rpsHistory; charts.rps.update(); }
+      if (arr.length > 0) handleSnapshot(arr[arr.length - 1]);
+    }
 
-function handleTick(snap){
-  handleSnapshot(snap);
-  if(charts.rps){rpsHistory.push(snap.global_rps||0);if(rpsHistory.length>120)rpsHistory.shift();charts.rps.data.labels=rpsHistory.map(()=>'');charts.rps.data.datasets[0].data=rpsHistory;charts.rps.update();}
-}
+    function handleTick(snap) {
+      handleSnapshot(snap);
+      if (charts.rps) { rpsHistory.push(snap.global_rps || 0); if (rpsHistory.length > 120) rpsHistory.shift(); charts.rps.data.labels = rpsHistory.map(() => ''); charts.rps.data.datasets[0].data = rpsHistory; charts.rps.update(); }
+    }
 
-function connectWS(){
-  const p=location.protocol==='https:'?'wss:':'ws:';
-  const ws=new WebSocket(`${p}//${location.host}/ws`);
-  const pill=document.getElementById('connection-pill');
-  ws.onmessage=e=>{try{const m=JSON.parse(e.data);if(m.type==='history')handleHistory(m.data);else if(m.type==='tick')handleTick(m.data);}catch(err){console.error('WS parse error',err);}};
-  ws.onopen=()=>{pill.className='pill live';pill.innerHTML='Connected';};
-  ws.onclose=()=>{pill.className='pill offline';pill.innerHTML='Reconnecting…';setTimeout(connectWS,2000);};
-  ws.onerror=()=>ws.close();
-}
+    function connectWS() {
+      const p = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const ws = new WebSocket(`${p}//${location.host}/ws`);
+      const pill = document.getElementById('connection-pill');
+      ws.onmessage = e => { try { const m = JSON.parse(e.data); if (m.type === 'history') handleHistory(m.data); else if (m.type === 'tick') handleTick(m.data); } catch (err) { console.error('WS parse error', err); } };
+      ws.onopen = () => { pill.className = 'pill live'; pill.innerHTML = 'Connected'; };
+      ws.onclose = () => { pill.className = 'pill offline'; pill.innerHTML = 'Reconnecting…'; setTimeout(connectWS, 2000); };
+      ws.onerror = () => ws.close();
+    }
 
-function toggleExplore(btn){
-  const p=btn.closest('.card'),c=p.querySelector('.explore-container');
-  if(c.classList.contains('open')){c.classList.remove('open');btn.classList.remove('active');btn.innerHTML='Explore ↓';}
-  else{c.classList.add('open');btn.classList.add('active');btn.innerHTML='Close ↑';setTimeout(()=>{p.scrollIntoView({behavior:'smooth',block:'nearest'});},300);}
-}
+    function toggleExplore(btn) {
+      const p = btn.closest('.card'), c = p.querySelector('.explore-container');
+      if (c.classList.contains('open')) { c.classList.remove('open'); btn.classList.remove('active'); btn.innerHTML = 'Explore ↓'; }
+      else { c.classList.add('open'); btn.classList.add('active'); btn.innerHTML = 'Close ↑'; setTimeout(() => { p.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 300); }
+    }
 
-document.getElementById('mainTabs').addEventListener('click',e=>{
-  const b=e.target.closest('button'); if(!b) return;
-  document.querySelectorAll('#mainTabs button').forEach(b=>b.classList.remove('active')); b.classList.add('active');
-  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
-  document.getElementById('view-'+b.dataset.target).classList.add('active');
-  window.scrollTo({top:0,behavior:'smooth'});
-});
+    document.getElementById('mainTabs').addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      document.querySelectorAll('#mainTabs button').forEach(b => b.classList.remove('active')); b.classList.add('active');
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      document.getElementById('view-' + b.dataset.target).classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
 
-// ── Theme Toggle ──
-const thmBtn = document.getElementById('theme-toggle');
-thmBtn.addEventListener('click', () => {
-  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
-  if (isLight) {
-    document.documentElement.removeAttribute('data-theme');
-    thmBtn.innerText = '🌞 LIGHT';
-    localStorage.setItem('ilb-theme', 'dark');
-  } else {
-    document.documentElement.setAttribute('data-theme', 'light');
-    thmBtn.innerText = '🌙 DARK';
-    localStorage.setItem('ilb-theme', 'light');
-  }
-});
-if (localStorage.getItem('ilb-theme') === 'light') {
-  document.documentElement.setAttribute('data-theme', 'light');
-  thmBtn.innerText = '🌙 DARK';
-}
+    // ── Theme Toggle ──
+    const thmBtn = document.getElementById('theme-toggle');
+    thmBtn.addEventListener('click', () => {
+      const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+      if (isLight) {
+        document.documentElement.removeAttribute('data-theme');
+        thmBtn.innerText = ' LIGHT';
+        localStorage.setItem('ilb-theme', 'dark');
+      } else {
+        document.documentElement.setAttribute('data-theme', 'light');
+        thmBtn.innerText = ' DARK';
+        localStorage.setItem('ilb-theme', 'light');
+      }
+    });
+    if (localStorage.getItem('ilb-theme') === 'light') {
+      document.documentElement.setAttribute('data-theme', 'light');
+      thmBtn.innerText = ' DARK';
+    }
 
-window.onload=async()=>{
-  await loadConfig();
-  initCharts();
-  handleSnapshot({});
-  connectWS();
-};
-</script>
+    window.onload = async () => {
+      await loadConfig();
+      initCharts();
+      handleSnapshot({});
+      connectWS();
+    };
+  </script>
 </body>
+
 </html>

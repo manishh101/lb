@@ -40,9 +40,26 @@ cd intelligent-lb
 # 2. Build the project
 go build -o bin/loadbalancer ./cmd/loadbalancer
 
-# 3. Run it
+# 3. Run it locally
 ./bin/loadbalancer
 ```
+
+## 🐳 Docker Compose Deployment (Recommended)
+
+To run the load balancer along with 4 local backend instances (`alpha`, `beta`, `gamma`, `delta`) in a fully self-contained Docker bridge network:
+
+```bash
+# Provide a fully isolated microservices stack
+docker compose up -d --build
+
+# View real-time logs of the cluster
+docker compose logs -f
+
+# Shut down the stack
+docker compose down
+```
+
+*Note: The Docker setup automatically maps the API gateway to `http://localhost:8082` and the Dashboard to `http://localhost:8081`.*
 
 ## ⚙️ Configuration Reference (config.json)
 

@@ -3,9 +3,6 @@ version: "3.8"
 networks:
   lb-network:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/24
 
 services:
   alpha:
@@ -16,8 +13,7 @@ services:
     container_name: alpha
     hostname: alpha
     networks:
-      lb-network:
-        ipv4_address: 172.20.0.11
+      - lb-network
     ports:
       - "8001:8001"
     healthcheck:
@@ -34,8 +30,7 @@ services:
     container_name: beta
     hostname: beta
     networks:
-      lb-network:
-        ipv4_address: 172.20.0.12
+      - lb-network
     ports:
       - "8002:8002"
     healthcheck:
@@ -52,8 +47,7 @@ services:
     container_name: gamma
     hostname: gamma
     networks:
-      lb-network:
-        ipv4_address: 172.20.0.13
+      - lb-network
     ports:
       - "8003:8003"
     healthcheck:
@@ -70,8 +64,7 @@ services:
     container_name: delta
     hostname: delta
     networks:
-      lb-network:
-        ipv4_address: 172.20.0.14
+      - lb-network
     ports:
       - "8004:8004"
     healthcheck:
@@ -87,10 +80,9 @@ services:
     container_name: loadbalancer
     hostname: loadbalancer
     networks:
-      lb-network:
-        ipv4_address: 172.20.0.10
+      - lb-network
     ports:
-      - "8080:8080"
+      - "8082:8082"
       - "8081:8081"
     depends_on:
       alpha:
