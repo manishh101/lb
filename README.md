@@ -4,7 +4,7 @@ A production-ready, highly configurable, intelligent HTTP Load Balancer in Go, i
 
 *(Minor Project Setup — IOE Pulchowk Campus, BCT 2026)*
 
-## 🚀 Key Features
+##  Key Features
 
 *   **Dynamic Rule-Based Routing:** Route requests based on `PathPrefix`, `Host`, and `Header` matchers across multiple prioritized routers.
 *   **Per-Service Configuration & Isolation:** Define multiple backend services, each with entirely isolated health checks, circuit breakers, metrics (RPS, Latency), and load balancing behaviors.
@@ -28,7 +28,7 @@ A production-ready, highly configurable, intelligent HTTP Load Balancer in Go, i
 *   **Production Microservices Stack:** Fully containerized with Docker Compose, featuring built-in health checks and service dependencies.
 *   **Kubernetes Ready:** Includes dedicated `/api/health` liveness probes.
 
-## 📦 Installation & Setup
+##  Installation & Setup
 
 You need Go (1.21+) installed.
 
@@ -44,7 +44,7 @@ go build -o bin/loadbalancer ./cmd/loadbalancer
 ./bin/loadbalancer
 ```
 
-## 🐳 Docker Compose Deployment (Recommended)
+##  Docker Compose Deployment (Recommended)
 
 To run the load balancer along with 4 local backend instances (`alpha`, `beta`, `gamma`, `delta`) in a fully self-contained Docker bridge network:
 
@@ -61,7 +61,7 @@ docker compose down
 
 *Note: The Docker setup automatically maps the API gateway to `http://localhost:8082` and the Dashboard to `http://localhost:8081`.*
 
-## ⚙️ Configuration Reference (config.json)
+##  Configuration Reference (config.json)
 
 The load balancer relies on a rich JSON configuration combining Entrypoints, Routers, Middlewares, and Services.
 
@@ -139,7 +139,7 @@ The load balancer relies on a rich JSON configuration combining Entrypoints, Rou
 }
 ```
 
-## 🛠 Features Deep Dive
+##  Features Deep Dive
 
 ### Dynamic Canary Deployments
 Setting `"canary": true` on a service immediately switches that specific service's algorithm to **Smooth Weighted Round Robin**. This guarantees precise interleaving. For example, a 90/10 weight configuration ensures exactly 1 in 10 requests goes to the canary server seamlessly, without clustering.
@@ -156,7 +156,7 @@ You don't need the UI to query metrics anymore.
 - `GET /api/history` — Dumps the latest 120 historic snapshots for analytical chart plotting.
 - `GET /api/health` — A basic 200 OK probe designed for container orchestrators (e.g. k8s liveness endpoints).
 
-## 🚀 Performance Benchmarks (Verified)
+##  Performance Benchmarks (Verified)
 
 Current architecture has been verified using a professional **Grafana k6** load test.
 
@@ -170,12 +170,12 @@ To reproduce these results, run the following docker command in your terminal:
 docker run --rm -i --network intelligent-lb_lb-network grafana/k6 run - < load_test.js
 ```
 
-## 📡 Viewing the Dashboard
+## Viewing the Dashboard
 
 1. Navigate to: `http://localhost:8081` (default auth: admin / secret)
 2. You will see a dark IBM terminal-themed dashboard showing real-time RPS, active connections, total requests, P95 latency, and live circuit breaker transitions.
 
-## 🤝 Project Contribution
+##  Project Contribution
 Minor project for IOE Pulchowk Campus, BCT 2026.
 Designed, documented, and built with modern High-Availability & SRE principles in mind.
 
