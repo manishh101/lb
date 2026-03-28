@@ -195,3 +195,8 @@ Designed, documented, and built with modern High-Availability & SRE principles i
    ```bash
    docker run --rm -i --network intelligent-lb_lb-network grafana/k6 run - < load_test.js
    ```
+
+
+   ```bash
+   docker run --rm -i --network intelligent-lb_lb-network grafana/k6 run - < traffic_generator.js
+   ```
