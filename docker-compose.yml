@@ -97,14 +97,3 @@ services:
       - ./web:/app/web
       - ./logs:/app/logs
 
-  traffic-gen:
-    image: grafana/k6
-    container_name: traffic-gen
-    volumes:
-      - ./:/src
-    command: run /src/traffic_generator_v2.js
-    networks:
-      - lb-network
-    depends_on:
-      - loadbalancer
-    restart: always

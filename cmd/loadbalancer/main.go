@@ -25,9 +25,9 @@ import (
 
 // appState holds all mutable components that can be updated during hot reload.
 type appState struct {
-	mu        sync.RWMutex
-	cfg       *config.Config
-	svcMgr    *service.Manager
+	mu     sync.RWMutex
+	cfg    *config.Config
+	svcMgr *service.Manager
 
 	// Rule-based routing
 	routerMgr *router.Manager
